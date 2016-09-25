@@ -1,0 +1,15 @@
+# Ignore MacOS specific things: 
+.DS_Store
+Desktop.ini
+._*
+Thumbs.db
+.Spotlight-V100
+/Icon*
+
+
+# some common things that should to be ignored
+*.pyc
+*.out
+venv
+node_modules
+.sass-cache
