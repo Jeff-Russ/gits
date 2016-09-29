@@ -4,43 +4,52 @@
 
 ![status: untested](https://s3.amazonaws.com/cdn.shared/git-status-badges/status-untested-red.svg)  
 
-`gits` is very simple - it lets you initialize and toggle between multiple Git repositories from the same main working directory. Basically it just moves out the `.git` and `.gitignore` and brings in a new one whenever you toggle. The only difference between each would be what you choose to put in each respective`.gitignore` file.  
+## NAME
 
-This is useful if you want, for example, a publicly available version of a project that ignores sensitive data and a private one that does not. It can also be used where you would normally use submodules (only they would all have the same main working tree (top level folder) unless you do something fancy with `-C` or `--work-tree=subfolder`). An example of this sort of case might be applying Git to a an entire WordPress site where you have one repository that backs the whole thing up, one that omits host specific files or one what only includes code you have added to the WordPress Core files.  
+`gits` allows you to toggle between multiple git repositories from the same working directory, each assigned a name
 
-## Installation
+## USAGE
+
+`gits --help` view help message  
+`gits <name>` switch to or initialize a new git repository  
+`gits <name> <git commands...>` run git command for named repository  
+`gits` lists all repository names with option to select  
+`gits -a <git commands...>` run git command for all repositories  
+`gits --cat-ignore <name>` view .gitignore for named repository  
+`gits --cat-readme <name>` view README.* for named repository  
+`gits --edit-ignore <name> [EDITOR]` edit .gitignore for named repository  
+`gits --edit-readme <name> [EDITOR]` edit README.* for named repository  
+
+NOTE: only the first four above have been implemented.
+
+## DESCRIPTION
+
+`gits` is a wrapper around the git command moves in and out the files associated with a specific git repository before you run the normal git commands. `gits` is always run from the same directory and, unlike Git Submodules, the resulting repositories all share the same main working tree (although you can override this with custom commands).  
+
+Typically, the difference between each would be what you choose to put in each respective `.gitignore` file. 
+
+## USE CASES
+
+It might be preferable publicly available version of a project or website that ignores sensitive data and a private one that does not. There are other reasons why you might want to have multiple version where some ignore certain items. For example, you may use Git to back up an entire WordPress site and a second that omits host specific files allowing you to re-deploy on a different host without errors. Or you may want a repository that only includes code you have added in `wp-admin/plugins` and not the WordPress Core files.  
+
+
+## INSTALLATION
 
 `cd` to anywhere in your system `$PATH` and run:
 
 $ curl -O https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits
 
-You can actually do this from any location or even at the root of each project you want to use it in.  
+You can actually do this from any location or even at the root of each project you want to use it in and run it as `./gits` 
 
+## SETUP AND USE
 
-## gits setup
+Setup is simple, whether you have already run `git init` before, just choose a name for it and type `gits <name>`. To create a second simply run it again with a new name. The old repository will be switched out `git init` will be run and assigned the new name.  
 
-Note that the following show gits being run simply as `gits` but if you don't have it in your `$PATH` you'll need to specify the full path of the `gits` file. If it's right at the root of your gits project you would type `./gits` instead.  
+If you type `gits <name>` where `<name>` is a name you previously created, you will be switched to that repository. Now the `.gitignore` and any `README` you see will belong to this repository. At this point you can use the normal git command or gits and the command will be run on this repository.  
 
-For any given project that you want to create multiple git repositories from you should run all `gits` commands from the top directory, referred to in git terminology as the "main working directory" but in this document I'll call simply the "__project root__".  
+You can switch and run the command(s) at once with `gits <name> <git commands...>` which also leaves you in this new repository. 
 
-You can decide you want more than one git either before or after you have already initialized git but once you have decided to go forward and use `gits` there are a few thing you should do slightly different. But before we address that, here is how you get started.  
+## CUSTOM COMMANDS
 
-    $ cd wherever/your/project/dir/is
-    $ # optionally run this to see some info much like this README:
-    $ gits help
-    $ gits setup
-        A directory ending with '_gits' needs to be created.
-        Enter something to prepend the name (start with . to make hidden)
-        or just hit enter to name it _gits:
-    $ .
-        Success.
-        <a brief instructional>
-
-If you `gits` finds that you had run `git init` in this location (by seeing the `.git/` directory) it will prompt you to enter a name for this "gits" before "Success." This name is used by `gits` to keep track of which "gits" is which. In the above example, if you had a a git repository there and choose the name "project x" a directory called  `._gits` will be made at the project root and also `._gits/project x`.  
-
-In this example I choose to prepend `_gits/` with a dot to make it hidden but you might actually prefer not to have it hidden so you can see the names and details of each "gits" in this directory easily. There is, however, a way to list out what you have with the `gits` which we will see later.  
-
-## gits init
-
-After `git setup` was run you should never run the normal `git init`. Whether you never had a git repository there or are creating a second or subsequent gits you need to run  `git init`
+Beside creating and switching repository, you might also want to use `gits` instead of `git` if you have created a custom command. When a custom command is set, it is inserted between the call to `git` and `<git commands...>` when you run `gits <name> <git commands...>` for example. This is useful for changing the main working tree for some repositories. 
 
