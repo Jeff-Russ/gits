@@ -8,7 +8,7 @@
 
 `gits` allows you to toggle between multiple git repositories from the same working directory, each assigned a name
 
-## USAGE
+## COMMON USAGE
 
 `gits --help` view help message  
 `gits <name>` switch to or initialize a new git repository  
@@ -24,22 +24,21 @@ NOTE: only the first four above have been implemented.
 
 ## DESCRIPTION
 
-`gits` is a wrapper around the git command moves in and out the files associated with a specific git repository before you run the normal git commands. `gits` is always run from the same directory and, unlike Git Submodules, the resulting repositories all share the same main working tree (although you can override this with custom commands).  
+`gits` is a wrapper around the git command that moves items associated with a specific git repository (.gitignore, the .git/ directory and README.*, if found) in and out between running the normal git commands. `gits` is always run from the same directory and, unlike Git Submodules, the resulting repositories all share the same main working tree unless you override this with custom commands. In other words, you will run everything from the same location but you can set things up as if you are changing directories and running git commands in different sub-directories.   
 
 Typically, the difference between each would be what you choose to put in each respective `.gitignore` file. 
 
 ## USE CASES
 
-It might be preferable publicly available version of a project or website that ignores sensitive data and a private one that does not. There are other reasons why you might want to have multiple version where some ignore certain items. For example, you may use Git to back up an entire WordPress site and a second that omits host specific files allowing you to re-deploy on a different host without errors. Or you may want a repository that only includes code you have added in `wp-admin/plugins` and not the WordPress Core files.  
+It might be preferable to have a publicly available version of a project or website that ignores sensitive data and a private one that does not. There are other reasons why you might want to have multiple version where some ignore certain items and others don't. For example, you may use Git to back up an entire WordPress site and a second that omits host specific files allowing you to re-deploy on a different host without errors. Or you may want a repository that only includes code you have added in `wp-admin/plugins` and not the WordPress Core files.  
 
 
 ## INSTALLATION
 
-`cd` to anywhere in your system `$PATH` and run:
+From any location in terminal:  
 
-$ curl -O https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits
-
-You can actually do this from any location or even at the root of each project you want to use it in and run it as `./gits` 
+    $ curl -O https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits
+    $ ./gits --install
 
 ## SETUP AND USE
 
