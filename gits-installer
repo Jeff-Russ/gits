@@ -70,7 +70,7 @@ chmod 755 "$HOME/bin/gits" || warning_mgs "unable to run 755 ~/bin/gits"
 
 if file_found "$HOME/bin/GITS.1"; then 
 	if str_eq "$1" "--update"; then 
-		mv "$HOME/bin/gits" "$tmp/gits" || exiterr "mv ~/bin/GITS.1 $dtmp/GITS.1 failed."
+		mv "$HOME/bin/GITS.1" "$tmp/gits" || exiterr "mv ~/bin/GITS.1 $dtmp/GITS.1 failed."
 	else
 		exiterr "previous installation found. Run again with --update"
 	fi
