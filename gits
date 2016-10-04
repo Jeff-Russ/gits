@@ -8,36 +8,86 @@ shopt -s dotglob # for access to hidden items
 # main the only entry point and is passed "$@" without modification
 main () {
 
+	# no args is just a quick way to list all and see active git name
+	# TODO: make the latter have an option to select by number!
 	if num_eq "$#" "0"; then
 		obligatory_stuff
 
-		if num_eq "${#ALL_GIT_NAMES[@]}" "0"; then
+		if num_eq "${#ALL_GIT_NAMES[@]}" "0"; then # nothing to show
 			echo "You have no active git repositories. run: gits <NAME>"
 			printf "to initialize a new named repository. For help, run: gits --help\n\n"
 			exit 0
 		else
-			printarr ALL_GIT_NAMES[@]
+			printarr ALL_GIT_NAMES[@] # list all
 			is_z "$ACTIVE_GIT_NAME" && ACTIVE_GIT_NAME="none"
 			printf "Active: $ACTIVE_GIT_NAME\n\n"
 			exit 0
 		fi
-	else
+
+	# most common exection path is a non-flag 1st arg which is the repo name:
+	elif ! str_starts "$1" "-"; then # doesn't start with - means not a flag
+			obligatory_stuff
+
+			select_git "$1"
+			shift
+			if not_z "$1"; then 
+				CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
+				git "$CUSTOM_CMD" "$@"
+			fi
+
+	# else we have a 1st arg which is a flag. These are rare or informational
+	else 
 		case "$1" in
+
+		# echo version (actually alphanum orderable timestamp)
 		-v|--version)
 			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
 			v_desc=`stat -f "%Sm" "$SRC_PATH"`
 			echo "$ver -- $v_desc"
 			;;
+
+		# quick+temp add to path (not working)
 		--path)
 			echo "$SRC_DIR"
 			export PATH="$PATH:$SRC_DIR"
 			;;
+
+		# copy is same as install but doesn't self delete
 		-cp)
 			dir_missing "$HOME/bin" && mkdir "$HOME/bin"
 			INSPATH="export PATH=\$PATH:\"$HOME/bin\""
 			not_in_path "$HOME/bin" && echo "$INSPATH" >> "$HOME/.bash_profile"
 			cp "$SRC_PATH" "$HOME/bin/gits"
 			;;
+		-gi|--gitignore)
+			obligatory_stuff
+
+			not_z "$2" && cmd="$2" || cmd="cat"
+			repo_name_arg="$3" # $3 might be empty but it's okay
+
+			run_on_file ".gitignore" "$cmd" "$repo_name_arg" 
+			;;
+		-rm|--readme)
+			obligatory_stuff
+
+			not_z "$2" && cmd="$2" || cmd="cat"
+			repo_name_arg="$3" # $3 might be empty but it's okay
+
+			run_on_file "README." "$cmd" "$repo_name_arg" 
+			;;
+		-a|--all)
+			shift
+			obligatory_stuff
+
+			for git_name in "${ALL_GIT_NAMES[@]}"; do
+				select_git "$git_name"
+				if not_z "$1"; then 
+					CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
+					git "$CUSTOM_CMD" "$@"
+				fi
+			done
+			;;
+		# suggested installation method:
 		--install)
 			if dir_missing "$HOME/bin"; then
 				echo "making ~/bin directory"
@@ -56,6 +106,8 @@ main () {
 				echo "Looks like ~/bin/gits might be a newer version than this one!"
 			fi
 			;;
+
+		# display some help info
 		--help)
 			printf "\n\t\tgits - https://github.com/Jeff-Russ/gits\n\n"
 			echo "gits is a wrapper around the git command that allows you to toggle between multiple git "
@@ -66,64 +118,15 @@ main () {
 			display_how_to
 			printf "To get started, run \`gits setup\` or visit the GitHub\n\n\t\t~Jeff Russ\n\n"
 			;;
-		*)  # then the first arg is either name to switch to or a new name to create
-			obligatory_stuff
-			select_git "$1"
-
-			shift
-			if not_z "$1"; then 
-				CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
-				git "$CUSTOM_CMD" "$@"
-			fi
-			;;
 		esac
 	fi
 }
 
 ###############################################################################
-######                Function to Switch + Create Gits                   ######
+######                       Gits Functions                              ######
 
-# This function takes one arg: a gits repository name
-# If the name exists and is inactive it's made active and CUSTOM_CMD is set
-# If it's already active, just set CUSTOM_CMD
-# If the name is not found, the user is prompted, it's created then switched to
-
-CUSTOM_CMD="" # this global might be set below. It will be insert right after git
-select_git () {
-	repo_to_use="$1"
-
-	if dir_found "$WD/$GITS_FOLDER/$repo_to_use"; then # If this is not a new name
-		
-		if str_ne "$ACTIVE_GIT_NAME" "$repo_to_use"; then  # AND it's not the active one
-			if not_z "$ACTIVE_GIT_NAME"; then 
-				echo "Moving currently active to $GITS_FOLDER/$ACTIVE_GIT_NAME"
-				mv_git "$WD" "$WD/$GITS_FOLDER/$ACTIVE_GIT_NAME"
-			fi
-			echo "Switching to '$repo_to_use'"
-			mv_git "$WD/$GITS_FOLDER/$repo_to_use" "$WD"
-			ACTIVE_GIT_NAME="$repo_to_use"
-		fi
-
-	else # the name entered does not exist and should be created
-		echo "Creating '$WD/$GITS_FOLDER/$repo_to_use'"
-		# move out .git .gitignore and README.* if found at root dir
-		if not_z "$ACTIVE_GIT_NAME"; then 
-			echo "Moving currently active to $GITS_FOLDER/$ACTIVE_GIT_NAME"
-			mv_git "$WD" "$WD/$GITS_FOLDER/$ACTIVE_GIT_NAME"
-		fi
-		mkdir "$WD/$GITS_FOLDER/$repo_to_use"
-
-		ACTIVE_GIT_NAME="$repo_to_use"
-		local insert=`echo_ignore_insert "$ACTIVE_GIT_NAME"`
-		printf "$insert" >> "$WD/.gitignore"
-		cd "$WD"
-		git init
-	fi
-}
-
-
-###############################################################################
-######                Almost Always Run Function                         ######
+#________________________________________________________________________#
+#                     Almost Always Run Functions                        #
 
 # The obligatory_stuff fuction will
 #	1. fetch all needed information
@@ -141,7 +144,6 @@ ALL_GIT_NAMES=()      # array of all dir in $WD/$GITS_FOLDER that have .git
 EMPTY_GIT_NAMES=() # array of all dir name in $WD/$GITS_FOLDER that lack .git
 IGN_INSERT=""         # text to be added to ignore (needs other vars set)
 
-
 obligatory_stuff () {
 
 	active_git_path="" # full path to active .git if found
@@ -150,8 +152,8 @@ obligatory_stuff () {
 	dir_found "$WD/.git" && active_git_path="$WD/.git"
 	file_found "$WD/.gitignore" && active_ign_path="$WD/.gitignore"
 
-	if dir_found "$WD"/*"_gits/"; then
-		echo "gits found"
+
+	if dir_found "$WD"/*"_gits/"; then # gits already used here. gather info
 
 		GITS_FOLDER="$(basename "$(echo "$WD"/*_gits)")"
 		IGN_INSERT="/$GITS_FOLDER/ # auto-added by gits command"
@@ -176,7 +178,8 @@ obligatory_stuff () {
 
 		exit_for_errors #()
 
-	else # gits was not set up here
+	else # gits was not set up so we'll prompt user and do it
+
 		printf "\nYou are about to initialize mulitiple git management from this top-level directory\n"
 		printf "Hit [ENTER] to proceed, dot (.) [ENTER] to proceed as hidden or anything else to abort: "
 		read prepend
@@ -215,17 +218,21 @@ obligatory_stuff () {
 exit_for_errors () {
 	num_of_empty=${#EMPTY_GIT_NAMES[@]} # used only for error handling below
 	
-	if not_z "$active_git_path"; then # exit 1 for show-stopper errors
-		if num_eq "$num_of_empty" "0"; then
+	if not_z "$active_git_path"; then
+		
+		if num_eq "$num_of_empty" "0"; then # show the show
 			printf "\nERROR: The active git is not recognized as one of the named gits "
 			printf "since none of the directories in $GITS_FOLDER is lacking a .git/\n"
 			printf "Choose a name for it and run: mkdir $GITS_FOLDER/DESIREDNAME/\n"
 			printf "Now exiting...\n\n"; exit 1
-		elif num_gt "$num_of_empty" "1"; then 
+		
+		elif num_gt "$num_of_empty" "1"; then # show the show
 			printf "\nERROR: The active git name is unclear since $GITS_FOLDER shows more "
 			printf "than one possible active git by lacking a .git/ directory.\n"
 			printf "Now exiting...\n\n"; exit 1
+		
 		else # there is a valid active git and everything is fine
+
 			ACTIVE_GIT_NAME="${EMPTY_GIT_NAMES[0]}"
 			if is_z "$active_ign_path"; then # might as well make sure it has the insert
 				active_ign_path="$WD/.gitignore"
@@ -233,10 +240,12 @@ exit_for_errors () {
 				printf "$insert" >> "$active_ign_path"
 			fi
 		fi
+
 	elif num_gt "$num_of_empty" "1"; then # we have no active git and there should be 1+
 		printf "\nERROR: There is no active git but $GITS_FOLDER shows one or more as "
 		printf "active by not containing a .git/ directory.\n"
 		printf "Now exiting...\n\n"; exit 1
+	
 	elif num_eq "$num_of_empty" "1"; then # we have no active git and there should be 1
 		printf "\nERROR: $GITS_FOLDER/${EMPTY_GIT_NAMES[0]}/ is empty which means it should be active "
 		printf "but .git/ was not found at the project root!\n"
@@ -245,11 +254,93 @@ exit_for_errors () {
 	fi
 }
 
-###############################################################################
-######           Re-useable Functions for Other Tasks                    ######
 
-in_path () { echo "$PATH"|grep -q "$1" && return 0 || return 1; }
-not_in_path () { echo "$PATH"|grep -q "$1" && return 1 || return 0; }
+#________________________________________________________________________#
+#                        Other Gits Functions                            #
+
+run_on_file () {
+	filename="$1"
+	cmd="$2"
+	target_repo_name="$3"
+	DIRPATH=""
+
+	if is_z "$target_repo_name"; then
+		if is_z "$ACTIVE_GIT_NAME"; then
+			echo "You have not provided a git name and there is no active git."
+		else
+			DIRPATH="$WD" # user wants active file
+		fi
+
+	elif ! dir_found "$WD/$GITS_FOLDER/$target_git"; then
+		echo "The git name you have provided was not found." 
+	else
+		DIRPATH="$WD/$GITS_FOLDER/$target_git" # user wants inactive file
+	fi
+
+	# below only runs if there was no problem 
+	if not_z "$file_path"; then 
+
+		# some special things we need to do for the partial filename "README."
+		if str_eq "$filename" "README."; then
+
+			if file_found "$DIRPATH/README."* ; then 
+				filename="$(basename "$(echo "$DIRPATH/README."*)")" # get full filename
+			else
+				filename="README.md"; touch "$DIRPATH/$filename"     # make file
+			fi
+		fi
+		"$cmd" "$DIRPATH/$filename"
+	fi
+}
+
+# This function takes one arg: a gits repository name
+# If the name exists and is inactive it's made active and CUSTOM_CMD is set
+# If it's already active, just set CUSTOM_CMD
+# If the name is not found, the user is prompted, it's created then switched to
+
+CUSTOM_CMD="" # this global might be set below. It will be insert right after git
+
+select_git () {
+
+	if is_z "$1"; then
+		if is_z "$ACTIVE_GIT_NAME"
+			echo "There is no active git."
+			exit 0
+		else
+			repo_to_use="$ACTIVE_GIT_NAME"
+		fi
+	else
+		repo_to_use="$1"
+	fi
+
+	if dir_found "$WD/$GITS_FOLDER/$repo_to_use"; then # If this is not a new name
+		
+		if str_ne "$ACTIVE_GIT_NAME" "$repo_to_use"; then  # AND it's not the active one
+			if not_z "$ACTIVE_GIT_NAME"; then 
+				echo "Moving currently active to $GITS_FOLDER/$ACTIVE_GIT_NAME"
+				mv_git "$WD" "$WD/$GITS_FOLDER/$ACTIVE_GIT_NAME"
+			fi
+			echo "Switching to '$repo_to_use'"
+			mv_git "$WD/$GITS_FOLDER/$repo_to_use" "$WD"
+			ACTIVE_GIT_NAME="$repo_to_use"
+		fi
+
+	else # the name entered does not exist and should be created
+		echo "Creating '$WD/$GITS_FOLDER/$repo_to_use'"
+		# move out .git .gitignore and README.* if found at root dir
+		if not_z "$ACTIVE_GIT_NAME"; then 
+			echo "Moving currently active to $GITS_FOLDER/$ACTIVE_GIT_NAME"
+			mv_git "$WD" "$WD/$GITS_FOLDER/$ACTIVE_GIT_NAME"
+		fi
+		mkdir "$WD/$GITS_FOLDER/$repo_to_use"
+
+		ACTIVE_GIT_NAME="$repo_to_use"
+		local insert=`echo_ignore_insert "$ACTIVE_GIT_NAME"`
+		printf "$insert" >> "$WD/.gitignore"
+		cd "$WD"
+		git init
+	fi
+}
 
 mv_git () {
 	FROM="$1"; TO="$2"
@@ -257,7 +348,7 @@ mv_git () {
 	mv "$FROM/.gitignore" "$TO/.gitignore"
 	if file_found "$FROM/README."* ; then 
 		rm_path="$(echo "$FROM/README."*)"
-		rm_file="$(basename "$RM_PATH")"
+		rm_file="$(basename "$rm_path")"
 		mv "$rm_path" "$TO/$rm_file"
 	fi
 }
@@ -288,6 +379,13 @@ display_how_to () {
 	st+="where '<whatever>' would be whatever you would type after \`git\`\n"
 	printf "$st" | fold -w 80 -s
 }
+
+###############################################################################
+######           Re-useable Functions for Other Tasks                    ######
+
+in_path () { echo "$PATH"|grep -q "$1" && return 0 || return 1; }
+not_in_path () { echo "$PATH"|grep -q "$1" && return 1 || return 0; }
+
 printwrap () {
 	[[ -z "$2" ]] && w="80" || w="$2"
 	printf "$1" | fold -w $w -s
@@ -328,6 +426,7 @@ dir_found ()  { [ -d "$1" ] && return 0 || return 1; }
 dir_missing ()  { [ -d "$1" ] && return 1 || return 0; }
 str_eq () { [[ "$1" = "$2" ]] && return 0 || return 1; }
 str_ne () { [[ "$1" = "$2" ]] && return 1 || return 0; }
+str_starts () { [[ "$1" = "$2"* ]] && return 0 || return 1; }
 is_z () { [[ -z "$1" ]] && return 0 || return 1; }
 not_z () { [[ -z "$1" ]] && return 1 || return 0; }
 num_eq () { [ "$1" -eq "$2" ] && return 0 || return 1; }
