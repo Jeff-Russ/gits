@@ -72,11 +72,10 @@ INSTALLATION
 
 From any location in terminal:  
 
-    $ curl -O https://raw.githubusercontent.com/Jeff-Russ/gits/master/install.sh
-    $ chmod 755 ./install.sh  # if needed
-    $ ./install.sh
-    $ rm ./install.sh # if you want to clean up after install
-
+    $ curl -O https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits-installer
+    $ chmod 755 ./gits-installer
+    $ ./gits-installer # or ./gits-installer --update
+    $ rm ./gits-installer # if you want to clean up after install
 
 SETUP AND USE
 ------------
