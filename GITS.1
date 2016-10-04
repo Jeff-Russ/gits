@@ -1,0 +1,142 @@
+.TH GITS 1 "SEPT 2016" Linux "User Manuals"
+.SH NAME AND STATUS
+.PP
+\fB\fCgits\fR allows you to toggle between multiple git repositories from the same working directory, each assigned a name.
+.br
+\fB\fCgits\fR is currently in development and has not been tested.  
+.SH SYNOPSIS
+.PP
+\fB\fCgits\fR <\fIname\fP> <\fIgit\-commands\fP\&...>
+.br
+\fB\fCgits\fR [\fB\fC\-\-gitignore\fR | \fB\fC\-gi\fR] <\fIcommand\fP> <\fIname\fP>
+.br
+\fB\fCgits\fR [\fB\fC\-\-readme\fR | \fB\fC\-rm\fR] <\fIcommand\fP> <\fIname\fP>
+.br
+\fB\fCgits\fR [\fB\fC\-\-all\fR | \fB\fC\-a\fR] [\fIgit\-commands\fP\&...]
+.br
+\fB\fCgits\fR [\fB\fC\-\-help\fR ]  
+.SH TYPICAL USEAGE
+.PP
+FLAGLESS USEAGE: \fB\fCgits\fR <\fIname\fP> <\fIgit\-commands\fP\&...>  
+.PP
+.RS
+.nf
+$ gits name1          # initialize a new git repository called "name1"  
+$ gits name2          # initialize and switch to new repository called "name2"  
+$ gits                # lists both names and show name2 as active  
+$ gits name1          # switch to name1 as active  
+$ gits name2 status   # switches to name2 and runs `git status`  
+$ gits name2 add \-A   # stay on name2 and run `git add \-A`  
+$ gits "" add \-A      # shorthand for previous 
+.fi
+.RE
+.PP
+GITIGNORE FLAGS: \fB\fCgits\fR [\fB\fC\-\-gitignore\fR | \fB\fC\-gi\fR] <\fIcommand\fP> <\fIname\fP>  
+.PP
+.RS
+.nf
+$ gits \-gi cat name1  # run `cat` on name1's .gitignore (without switching)  
+$ gits \-gi vim name2  # open name2's .gitignore in vim
+$ gits \-gi vim        # since name2 is active, this is shorthand for previous
+$ gits \-gi            # if not specified, the command defaults to `cat`  
+$ get \-\-gitignore     # long way to to previous et al
+$ gits \-gi "" name2   # `""` will default to `cat`
+.fi
+.RE
+.PP
+README FLAGS: \fB\fCgits\fR [\fB\fC\-\-readme\fR | \fB\fC\-rm\fR] <\fIcommand\fP> <\fIname\fP>  
+.PP
+.RS
+.nf
+$ gits \-rm cat name1  # run `cat` on name1's /README.* (without switching)  
+$ gits \-rm vim name2  # open name2's /README.* in vim
+$ gits \-rm vim        # since name2 is active, this is shorthand for previous
+$ gits \-rm            # if not specified, the command defaults to `cat`  
+$ get \-\-readme     # long way to to previous et al
+$ gits \-rm "" name2   # `""` will default to `cat`
+.fi
+.RE
+.PP
+WARNING: the 
+.BR feature (s) 
+below are experimental:  
+.PP
+ALL FLAGS: \fB\fCgits\fR [\fB\fC\-\-all\fR | \fB\fC\-a\fR] [\fIgit\-commands\fP\&...]
+.br
+\fB\fC\-all\fR or \fB\fC\-a\fR runs git 
+.BR command (s) 
+for all repositories  
+.SH DESCRIPTION
+.PP
+\fB\fCgits\fR is a wrapper around the git command can be used as an alternative to Git Submodules. Unlike Git Submodules, all \fB\fC\&.gitignore\fR files \fB\fC\&.git/\fR directories are kept in a central location at the top directory and are moved in and out, depending on which you want to run commands on. The multiple repositories all share the same main working tree (top level directory) unless you override this with custom commands. In other words, you will run everything from the same location.  
+.PP
+Typically, the difference between each would be what you choose to put in each respective \fB\fC\&.gitignore\fR file. You would often want to use a "whitelisting" method in \fB\fC\&.gitignore\fR so they different repositories include exclusive content.  
+.PP
+If you create a file called \fB\fCREADME.*\fR, at the main working tree, it too will be kept separate to each repository along with \fB\fC\&.gitignore\fR and \fB\fC\&.git/\fR\&.  
+.SH USE CASES
+.PP
+It might be preferable to have a publicly available version of a project or website that ignores sensitive data and a private one that does not. There are other reasons why you might want to have multiple version where some ignore certain items and others don't. For example, you may use Git to back up an entire WordPress site and a second that omits host specific files allowing you to re\-deploy on a different host without errors. Or you may want a repository that only includes code you have added in \fB\fCwp\-admin/plugins\fR and not the WordPress Core files.  
+.SH INSTALLATION
+.PP
+From any location in terminal:  
+.PP
+.RS
+.nf
+$ curl \-O https://raw.githubusercontent.com/Jeff\-Russ/gits/master/install.sh
+$ chmod 755 ./install.sh  # if needed
+$ ./install.sh
+$ rm ./install.sh # if you want to clean up after install
+.fi
+.RE
+.SH SETUP AND USE
+.PP
+\fBSetup:\fP Like most things with \fB\fCgits\fR, setup is simple. If you have already run \fB\fCgit init\fR before, just choose a name for it and by running \fB\fCgits <name>\fR\&. If you have not run \fB\fCgit init\fR this will happen with \fB\fCgits <name>\fR if this is the first time \fB\fCgits\fR sees \fB\fCname\fR\&.  
+.PP
+\fBAdding More:\fP To create a second repository simply run it again with a new name. The old repository will be switched out \fB\fCgit init\fR will be run and assigned the new name.  
+.PP
+\fBSwitching:\fP If you type \fB\fCgits <name>\fR where \fB\fC<name>\fR is a name you previously created, you will be switched to that repository. Now the \fB\fC\&.gitignore\fR and any \fB\fCREADME\fR you see will belong to this repository. At this point you can use the normal git command and the command will be run on this repository.  
+.PP
+\fBChecking Status:\fP Simply run \fB\fCgits\fR alone, without any arguments, to see a list of all repository names followed by the name of the one currently active.  
+.PP
+\fBFast Switching:\fP You can switch and run the 
+.BR command (s) 
+at once with \fB\fCgits <name> <git commands...>\fR which also leaves you in this new repository. If you want to run something on the currently active repository you can simply provide the dummy argument \fB\fC""\fR instead of it's actual name. For example:  
+.PP
+.RS
+.nf
+$ gits "" status
+.fi
+.RE
+.PP
+This probably is not useful over simply running a command directly with \fB\fCgit\fR unless you are set up to run a custom command (see section below).
+.PP
+\fBFast Editing and Viewing:\fP The \fB\fC\-\-gitignore\fR / \fB\fC\-gi\fR and \fB\fC\-\-readme\fR / \fB\fC\-rm\fR flags give you quick access to these files. The optional second argument is command you would like to run on this file, which defaults to the \fB\fCcat\fR command. The optional third argument is the name of the repository you assigned, which defaults to the currently active one. The following will display the files in the terminal for the active git repository:  
+.PP
+.RS
+.nf
+$ gits \-\-gitignore # runs $ cat .gitignore
+$ gits \-gi         # same as above
+$ gits \-\-readme    # runs cat on file starting "REAME."
+$ gits \-rm         # same as above
+.fi
+.RE
+.PP
+Adding a second argument to any of the above would let you run something other than \fB\fCcat\fR\&. This is useful for opening in an editor (you could put \fB\fCvim\fR as this argument).  The third argument lets you run the command on another repository \fIand does so without actually switching to it\fP\&.  
+.PP
+.RS
+.nf
+$ gits \-\-gitignore cat "other name"
+$ gits \-gi "" "other name" # same as above
+$ gits \-gi vim "other name" open .gitignore for "other name" in vim
+.fi
+.RE
+.SH CUSTOM COMMANDS
+.PP
+Beside creating and switching repository, you might also want to use \fB\fCgits\fR instead of \fB\fCgit\fR if you have created a custom command. When a custom command is set, it is inserted between the call to \fB\fCgit\fR and \fB\fC<git commands...>\fR when you run \fB\fCgits <name> <git commands...>\fR  This might be useful if you want a different main (top) working tree for one or more repositories. In this case might want to insert \fB\fC\-\-work\-tree=<directory>\fR\&.  
+.PP
+\fB\fCgits\fR will look for a line starting \fB\fC#CUSTOM_CMD=\fR in the respective \fB\fC\&.gitignore\fR and use whatever follows the \fB\fC=\fR to the end of the line as the custom command.  
+.PP
+Keep in mind the the actual \fB\fCgit\fR command is never run by \fB\fCgits\fR when the second argument is a flag. It is only run when the second argument is the name assigned to the repository or \fB\fC""\fR, which is a shortcut for the currently active repository name.  
+.SH AUTHOR
+.PP
+Jeff Russ \[la]https://github.com/Jeff-Russ/gits\[ra]
