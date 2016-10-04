@@ -68,6 +68,7 @@ fi
 
 printf "downloading gits command executable... "
 curl -O "$GH_URL/gits" && echo "Done." || exiterr "curl -O $GH_URL/gits failed."
+chmod 755 "$HOME/bin/gits" || warning_mgs "unable to run 755 ~/bin/gits"
 
 printf "downloading man page... "
 curl -O "$GH_URL/GITS.1" && echo "Done." || exiterr "curl -O $GH_URL/GITS.1 failed."
@@ -75,11 +76,6 @@ curl -O "$GH_URL/GITS.1" && echo "Done." || exiterr "curl -O $GH_URL/GITS.1 fail
 if str_eq "$1" "--update"; then 
 	file_found "$HOME/bin/gits_temp/gits" && rm "$HOME/bin/gits_temp/gits"
 	file_found "$HOME/bin/gits_temp/GITS.1" && rm "$HOME/bin/gits_temp/GITS.1"
-	contents="$(ls -A "$HOME/bin/gits_temp/" 
+	contents="$(ls -A "$HOME/bin/gits_temp/")" 
 	is_z "$contents" && rm -rf "$HOME/bin/gits_temp/"
 fi
-
-
-
-
-

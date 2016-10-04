@@ -74,22 +74,7 @@ main () {
 			;;
 
 		--help) # display some help info
-			printf "\n\t\tgits - https://github.com/Jeff-Russ/gits\n\n"
-			echo "gits is a wrapper around the git command that allows you to toggle between multiple git "
-			echo "repositories from the same main working directory. Each is assigned a name and .gitignore."
-			echo "(and possibly README.*) each in separate folders. The difference between each repositories is"
-			echo "controlled with .gitignore, which can be set up to ignore different things or even using a "
-			printf "'whitelisting' method.\n\n"
-			local st="You'll want to thoroughly set up your .gitignore before committing anything, "
-			st+="then use your normal git command for all task except \`git init\`. Instead:\n\n"
-			st+="\t$ gits NAME\n\n"
-			st+="The normal git command only applies only to the active git which can be changed with:\n\n"
-			st+="\t$ gits NAME>\n\n"
-			st+="You can switch and run a normal command in a single line with this:\n\n"
-			st+="\t$ gits <REPONAME> <whatever>\n\n"
-			st+="where '<whatever>' would be whatever you would type after \`git\`\n"
-			printf "$st" | fold -w 80 -s
-			printf "To get started, run \`gits setup\` or visit the GitHub\n\n\t\t~Jeff Russ\n\n"
+			man "$SRC_DIR/GITS.1"
 			;;
 
 		--install) # suggested installation method
