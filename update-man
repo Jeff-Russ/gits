@@ -1,0 +1,3 @@
+#!/bin/bash
+
+md2man-roff README.md > GITS.1
