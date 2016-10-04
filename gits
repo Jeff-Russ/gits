@@ -1,6 +1,10 @@
 #!/bin/bash
-# 
+
 shopt -s dotglob # for access to hidden items
+
+WD="$(pwd)" # might as well just set this here. It's the caller's full path
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # this scripts dir path
+SRC_PATH="$SRC_DIR/$(basename "${BASH_SOURCE[0]}")" # and this script's path
 
 ###############################################################################
 ######                Arg Parsing Function                               ######
@@ -11,80 +15,48 @@ main () {
 	# no args is just a quick way to list all and see active git name
 	# TODO: make the latter have an option to select by number!
 	if num_eq "$#" "0"; then
-		obligatory_stuff
 
+		obligatory_stuff
 		if num_eq "${#ALL_GIT_NAMES[@]}" "0"; then # nothing to show
 			echo "You have no active git repositories. run: gits <NAME>"
 			printf "to initialize a new named repository. For help, run: gits --help\n\n"
-			exit 0
 		else
 			printarr ALL_GIT_NAMES[@] # list all
 			is_z "$ACTIVE_GIT_NAME" && ACTIVE_GIT_NAME="none"
 			printf "Active: $ACTIVE_GIT_NAME\n\n"
-			exit 0
-		fi
+		fi # script exits
 
 	# most common exection path is a non-flag 1st arg which is the repo name:
 	elif ! str_starts "$1" "-"; then # doesn't start with - means not a flag
-			obligatory_stuff
 
-			select_git "$1"
-			shift
+			obligatory_stuff
+			select_git "$1"; shift
 			if not_z "$1"; then 
 				CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
 				git "$CUSTOM_CMD" "$@"
-			fi
+			fi # script exits
 
-	# else we have a 1st arg which is a flag. These are rare or informational
-	else 
+	else # else we have a 1st arg which is a flag. These are rare or informational
 		case "$1" in
 
-		# echo version (actually alphanum orderable timestamp)
-		-v|--version)
-			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
-			v_desc=`stat -f "%Sm" "$SRC_PATH"`
-			echo "$ver -- $v_desc"
-			;;
-
-		# quick+temp add to path: run this -> $ source ./gits --path
-		--path)
-			check_script_call=$(history |tail -1|grep "source ./gits --path")
-			if [ -z "$check_script_call" ];then
-				echo "This file should be called as a source."
-				echo "Please, try again this way:"
-				echo "$ source ./gits --path"
-				exit 1
-			else
-				export PATH="$PATH:$SRC_DIR"
-			fi
-			;;
-		# copy is same as install but doesn't self delete
-		-cp)
-			dir_missing "$HOME/bin" && mkdir "$HOME/bin"
-			INSPATH="export PATH=\$PATH:\"$HOME/bin\""
-			not_in_path "$HOME/bin" && echo "$INSPATH" >> "$HOME/.bash_profile"
-			cp "$SRC_PATH" "$HOME/bin/gits"
-			;;
-		-gi|--gitignore)
+		-gi|--gitignore) # run a command on any of the .gitignore
 			obligatory_stuff
-
 			not_z "$2" && cmd="$2" || cmd="cat"
 			repo_name_arg="$3" # $3 might be empty but it's okay
-
 			run_on_file ".gitignore" "$cmd" "$repo_name_arg" 
 			;;
-		-rm|--readme)
-			obligatory_stuff
 
+		-rm|--readme) # run a command on any of the README.*
+			obligatory_stuff
 			not_z "$2" && cmd="$2" || cmd="cat"
 			repo_name_arg="$3" # $3 might be empty but it's okay
 
 			run_on_file "README." "$cmd" "$repo_name_arg" 
 			;;
-		-a|--all)
-			shift
-			obligatory_stuff
 
+		-a|--all) # run on each git repo in a loop
+			shift # because we'll need "$@""
+			obligatory_stuff
 			for git_name in "${ALL_GIT_NAMES[@]}"; do
 				select_git "$git_name"
 				if not_z "$1"; then 
@@ -93,8 +65,34 @@ main () {
 				fi
 			done
 			;;
-		# suggested installation method:
-		--install)
+
+		-v|--version) 
+			# echo version (actually alphanum orderable timestamp)
+			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
+			v_desc=`stat -f "%Sm" "$SRC_PATH"`
+			echo "$ver -- $v_desc"
+			;;
+
+		--help) # display some help info
+			printf "\n\t\tgits - https://github.com/Jeff-Russ/gits\n\n"
+			echo "gits is a wrapper around the git command that allows you to toggle between multiple git "
+			echo "repositories from the same main working directory. Each is assigned a name and .gitignore."
+			echo "(and possibly README.*) each in separate folders. The difference between each repositories is"
+			echo "controlled with .gitignore, which can be set up to ignore different things or even using a "
+			printf "'whitelisting' method.\n\n"
+			local st="You'll want to thoroughly set up your .gitignore before committing anything, "
+			st+="then use your normal git command for all task except \`git init\`. Instead:\n\n"
+			st+="\t$ gits NAME\n\n"
+			st+="The normal git command only applies only to the active git which can be changed with:\n\n"
+			st+="\t$ gits NAME>\n\n"
+			st+="You can switch and run a normal command in a single line with this:\n\n"
+			st+="\t$ gits <REPONAME> <whatever>\n\n"
+			st+="where '<whatever>' would be whatever you would type after \`git\`\n"
+			printf "$st" | fold -w 80 -s
+			printf "To get started, run \`gits setup\` or visit the GitHub\n\n\t\t~Jeff Russ\n\n"
+			;;
+
+		--install) # suggested installation method
 			if dir_missing "$HOME/bin"; then
 				echo "making ~/bin directory"
 				mkdir "$HOME/bin"
@@ -113,17 +111,23 @@ main () {
 			fi
 			;;
 
-		# display some help info
-		--help)
-			printf "\n\t\tgits - https://github.com/Jeff-Russ/gits\n\n"
-			echo "gits is a wrapper around the git command that allows you to toggle between multiple git "
-			echo "repositories from the same main working directory. Each is assigned a name and .gitignore."
-			echo "(and possibly README.*) each in separate folders. The difference between each repositories is"
-			echo "controlled with .gitignore, which can be set up to ignore different things or even using a "
-			printf "'whitelisting' method.\n\n"
-			display_how_to
-			printf "To get started, run \`gits setup\` or visit the GitHub\n\n\t\t~Jeff Russ\n\n"
+		-cp) # -cp "copy" is same as install but doesn't self delete
+			dir_missing "$HOME/bin" && mkdir "$HOME/bin"
+			INSPATH="export PATH=\$PATH:\"$HOME/bin\""
+			not_in_path "$HOME/bin" && echo "$INSPATH" >> "$HOME/.bash_profile"
+			cp "$SRC_PATH" "$HOME/bin/gits"
 			;;
+
+		--path) # quick+temp add to path: run this -> $ source ./gits --path
+			check_script_call=$(history |tail -1|grep "source ./gits --path")
+			if [ -z "$check_script_call" ];then
+				printf "\nThis file should be called as a source. Try again this way:"
+				printf "\n\n\t$ source ./gits --path\n\n"
+				exit 1
+			else export PATH="$PATH:$SRC_DIR"
+			fi
+			;;
+
 		esac
 	fi
 }
@@ -140,18 +144,15 @@ main () {
 #	3. register an active git if found
 #	4. update all information
 
-# The "information" set in and needed elsewhere is the following globals:
-
-WD="$(pwd)" # might as well just set this here. It's the caller's full path
-SRC_DIR="$(cd "$(dirname "$0")" && pwd)" # this scripts dir path
-SRC_PATH="$SRC_DIR/$(basename "$0")" # and this script's path
-ACTIVE_GIT_NAME=""    # directory within $WD/$GITS_FOLDER that will hold active git
-ALL_GIT_NAMES=()      # array of all dir in $WD/$GITS_FOLDER that have .git
-EMPTY_GIT_NAMES=() # array of all dir name in $WD/$GITS_FOLDER that lack .git
-IGN_INSERT=""         # text to be added to ignore (needs other vars set)
-
 obligatory_stuff () {
 
+	# The "information" set in and needed elsewhere is the following globals:
+	ACTIVE_GIT_NAME=""    # directory within $WD/$GITS_FOLDER that will hold active git
+	ALL_GIT_NAMES=()      # array of all dir in $WD/$GITS_FOLDER that have .git
+	EMPTY_GIT_NAMES=() # array of all dir name in $WD/$GITS_FOLDER that lack .git
+	IGN_INSERT=""         # text to be added to ignore (needs other vars set)
+
+	# just used local to this function:
 	active_git_path="" # full path to active .git if found
 	active_ign_path="" # full path to active .gitignore if found
 
@@ -260,7 +261,6 @@ exit_for_errors () {
 	fi
 }
 
-
 #________________________________________________________________________#
 #                        Other Gits Functions                            #
 
@@ -304,9 +304,9 @@ run_on_file () {
 # If it's already active, just set CUSTOM_CMD
 # If the name is not found, the user is prompted, it's created then switched to
 
-CUSTOM_CMD="" # this global might be set below. It will be insert right after git
-
 select_git () {
+
+	CUSTOM_CMD="" # this global might be set below. It will be insert right after git
 
 	if is_z "$1"; then
 		if is_z "$ACTIVE_GIT_NAME"; then
@@ -374,17 +374,7 @@ debug_globals () {
 	printf "EMPTY_GIT_NAMES="
 	printarr_ln EMPTY_GIT_NAMES[@]
 }
-display_how_to () {
-	local st="You'll want to thoroughly set up your .gitignore before committing anything, "
-	st+="then use your normal git command for all task except \`git init\`. Instead:\n\n"
-	st+="\t$ gits NAME\n\n"
-	st+="The normal git command only applies only to the active git which can be changed with:\n\n"
-	st+="\t$ gits NAME>\n\n"
-	st+="You can switch and run a normal command in a single line with this:\n\n"
-	st+="\t$ gits <REPONAME> <whatever>\n\n"
-	st+="where '<whatever>' would be whatever you would type after \`git\`\n"
-	printf "$st" | fold -w 80 -s
-}
+
 
 ###############################################################################
 ######           Re-useable Functions for Other Tasks                    ######
@@ -437,6 +427,48 @@ is_z () { [[ -z "$1" ]] && return 0 || return 1; }
 not_z () { [[ -z "$1" ]] && return 1 || return 0; }
 num_eq () { [ "$1" -eq "$2" ] && return 0 || return 1; }
 num_gt () { [ "$1" -gt "$2" ] && return 0 || return 1; }
+
+
+read -d '' howto <<"EOF"
+
+## USEAGE
+
+	$ ./gits --install # install gits  
+	$ gits --help      # view help message  
+
+FLAGLESS USEAGE: `gits <name> <git_cmds...>`  
+
+	$ gits                      # list all repository `name`s and show currently active  
+	$ gits [name]               # switch to or initialize a new git repository with `name`  
+	$ gits [name] [git_cmds...] # switch to `name` and run `git git_cmds...`
+	$ gits "" [git_cmds...]     # run `git git_cmds...` for currently active repository  
+  
+GITIGNORE USEAGE: `gits --gitignore <cmd> <name>`  
+NOTE: `-gi` can be used instead of `--gitignore`  
+  
+	$ gits --gitignore [cmd] [name] # run `cmd` on .gitignore for `name` repository  
+	$ gits --gitignore [cmd]        # if not specified, `cmd` is run on active repository  
+	$ gits --gitignore              # if not specified, the `cmd` will be `cat`  
+	$ gits --gitignore "" <name>    # run `cat` on .gitignore for active repository  
+  
+README USEAGE: `gits --readme <cmd> <name>`  
+NOTE: `-rm` can be used instead of `--readme`  
+
+	$ gits --readme [cmd] [name] # run `cmd` on /README.* for `name` repository  
+	$ gits --readme [cmd]        # if not specified, `cmd` is run on active repository  
+	$ gits --readme              # if not specified, the `cmd` will be `cat`  
+	$ gits --readme "" <name>    # run `cat` on /README.*  for active repository  
+  
+NOTE: the feature(s) below are experimental:  
+  
+	$ gits --all [git_commands...]    # run git command for all repositories  
+  
+NOTE: `-a` can be used instead of `--all`  
+
+EOF
+
+echo "$howto"
+
 
 
 ###############################################################################
