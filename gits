@@ -46,12 +46,18 @@ main () {
 			echo "$ver -- $v_desc"
 			;;
 
-		# quick+temp add to path (not working)
+		# quick+temp add to path: run this -> $ source ./gits --path
 		--path)
-			echo "$SRC_DIR"
-			export PATH="$PATH:$SRC_DIR"
+			check_script_call=$(history |tail -1|grep "source ./gits --path")
+			if [ -z "$check_script_call" ];then
+				echo "This file should be called as a source."
+				echo "Please, try again this way:"
+				echo "$ source ./gits --path"
+				exit 1
+			else
+				export PATH="$PATH:$SRC_DIR"
+			fi
 			;;
-
 		# copy is same as install but doesn't self delete
 		-cp)
 			dir_missing "$HOME/bin" && mkdir "$HOME/bin"
@@ -303,7 +309,7 @@ CUSTOM_CMD="" # this global might be set below. It will be insert right after gi
 select_git () {
 
 	if is_z "$1"; then
-		if is_z "$ACTIVE_GIT_NAME"
+		if is_z "$ACTIVE_GIT_NAME"; then
 			echo "There is no active git."
 			exit 0
 		else
