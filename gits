@@ -135,7 +135,6 @@ obligatory_stuff () {
 	ACTIVE_GIT_NAME=""    # directory within $WD/$GITS_FOLDER that will hold active git
 	ALL_GIT_NAMES=()      # array of all dir in $WD/$GITS_FOLDER that have .git
 	EMPTY_GIT_NAMES=() # array of all dir name in $WD/$GITS_FOLDER that lack .git
-	IGN_INSERT=""         # text to be added to ignore (needs other vars set)
 
 	# just used local to this function:
 	active_git_path="" # full path to active .git if found
@@ -148,7 +147,6 @@ obligatory_stuff () {
 	if dir_found "$WD"/*"_gits/"; then # gits already used here. gather info
 
 		GITS_FOLDER="$(basename "$(echo "$WD"/*_gits)")"
-		IGN_INSERT="/$GITS_FOLDER/ # auto-added by gits command"
 		i=0
 		shopt -s nullglob # without this when $WD/$GITS_FOLDER is empty loop stills runs 1x
 		for dir in "$WD/$GITS_FOLDER"/*/ ; do 
@@ -344,7 +342,7 @@ mv_git () {
 	fi
 }
 echo_ignore_insert () {
-	echo "/$GITS_FOLDER/ # auto-added by gits for '$1'\n#CUSTOM_CMD="
+	echo "# auto-added by gits for '$1'\n/$GITS_FOLDER/\n#CUSTOM_CMD="
 }
 debug_globals () {
 	echo "active_git_path=$active_git_path"
@@ -353,7 +351,6 @@ debug_globals () {
 	echo "WD=$WD"
 	echo "GITS_FOLDER=$GITS_FOLDER"
 	echo "ACTIVE_GIT_NAME=$ACTIVE_GIT_NAME"
-	echo "IGN_INSERT=$IGN_INSERT"
 	printf "ALL_GIT_NAMES="
 	printarr_ln ALL_GIT_NAMES[@]
 	printf "EMPTY_GIT_NAMES="
