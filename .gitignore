@@ -6,6 +6,7 @@ Thumbs.db
 .Spotlight-V100
 /Icon*
 
+/tests
 
 # some common things that should to be ignored
 *.pyc

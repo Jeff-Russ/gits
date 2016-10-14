@@ -18,23 +18,36 @@ main () {
 
 		obligatory_stuff
 		if num_eq "${#ALL_GIT_NAMES[@]}" "0"; then # nothing to show
-			echo "You have no active git repositories. run: gits <NAME>"
-			printf "to initialize a new named repository. For help, run: gits --help\n\n"
+			printf "\nYou have no active git repositories.\n"
+			printf "\t\$ gits --help # To view man page\n"
+			printf "\t\$ gits [name] # To initialize a new named repository\n"
+			
 		else
-			printarr ALL_GIT_NAMES[@] # list all
-			is_z "$ACTIVE_GIT_NAME" && ACTIVE_GIT_NAME="none"
-			printf "Active: $ACTIVE_GIT_NAME\n\n"
+			printarr SELECTION_MENU[@]
 		fi # script exits
 
 	# most common exection path is a non-flag 1st arg which is the repo name:
 	elif ! str_starts "$1" "-"; then # doesn't start with - means not a flag
+		obligatory_stuff
 
-			obligatory_stuff
-			select_git "$1"; shift
-			if not_z "$1"; then 
-				CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
-				git "$CUSTOM_CMD" "$@"
-			fi # script exits
+		if is_u_int "$1"; then 
+			if is_z "${ALL_GIT_NAMES[$1]}"; then
+				printf "\nNOT FOUND. Try again, choosing from the following:\n\n"
+				printarr SELECTION_MENU[@]; echo; exit 1
+			else
+				selected_name="${ALL_GIT_NAMES[$1]}"; shift
+			fi
+		else
+			selected_name="$1"; shift
+		fi
+		
+		select_git "$selected_name"
+
+		if not_z "$1"; then 
+			echo "not_z, it's $1"
+			CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
+			git "$CUSTOM_CMD" "$@"
+		fi # script exits
 
 	else # else we have a 1st arg which is a flag. These are rare or informational
 		case "$1" in
@@ -107,7 +120,7 @@ main () {
 			check_script_call=$(history |tail -1|grep "source ./gits --path")
 			if [ -z "$check_script_call" ];then
 				printf "\nThis file should be called as a source. Try again this way:"
-				printf "\n\n\t$ source ./gits --path\n\n"
+				printf "\n\n\t$ source ./gits --path\n"
 				exit 1
 			else export PATH="$PATH:$SRC_DIR"
 			fi
@@ -135,6 +148,7 @@ obligatory_stuff () {
 	ACTIVE_GIT_NAME=""    # directory within $WD/$GITS_FOLDER that will hold active git
 	ALL_GIT_NAMES=()      # array of all dir in $WD/$GITS_FOLDER that have .git
 	EMPTY_GIT_NAMES=() # array of all dir name in $WD/$GITS_FOLDER that lack .git
+	SELECTION_MENU=()  # array to show user names with nums, marking active
 
 	# just used local to this function:
 	active_git_path="" # full path to active .git if found
@@ -153,8 +167,9 @@ obligatory_stuff () {
 			shopt -u nullglob
 
 			reponame="$(basename "${dir%*/}")"
-			echo "$i. $reponame"
+
 			ALL_GIT_NAMES+=("$reponame")
+			SELECTION_MENU+=("$i. $reponame")
 
 			if dir_missing "$dir/.git"; then 
 				EMPTY_GIT_NAMES+=("$reponame")
@@ -163,15 +178,24 @@ obligatory_stuff () {
 				printf "$insert" >> "$dir/.gitignore"
 			fi
 			i=$((i+1))
-			str_eq "$1" "echo list" && echo "$i. $reponame"
 		done
 
 		exit_for_errors #()
+		# we now have a value we can trust for ACTIVE_GIT_NAME so we can add it to list
+
+		for i in "${!ALL_GIT_NAMES[@]}"; do
+			if str_eq "${ALL_GIT_NAMES[$i]}" "${ACTIVE_GIT_NAME}" ; then
+				SELECTION_MENU[$i]="${SELECTION_MENU[$i]} <-ACTIVE"
+			fi
+		done
 
 	else # gits was not set up so we'll prompt user and do it
 
 		printf "\nYou are about to initialize mulitiple git management from this top-level directory\n"
-		printf "Hit [ENTER] to proceed, dot (.) [ENTER] to proceed as hidden or anything else to abort: "
+		echo "- Type a dot (.) and hit [ENTER] to manage with hidden directory (._gits/)"
+		echo "- Hit [ENTER] alone to proceed as unhidden (_gits/)"
+		echo "- Type anything else, then [ENTER] to abort"
+		printf "Your entry: "
 		read prepend
 
 		not_z "$prepend" && str_ne "." && exit 0 # get me out
@@ -183,7 +207,7 @@ obligatory_stuff () {
 		if not_z "$active_git_path"; then # gits was not set up but git was
 			printf "\nA git repository was found at your location.\n"
 			printf "\`gits\` need to assign a name for it so we can keep track.\n"
-			printf "This name doen't need to match any name used externally"
+			printf "This name doen't need to match any name used externally.\n"
 			printf "Enter a gits repository name (must also valid as a directory name): "
 			read newreponame
 			until mkdir "$WD/$GITS_FOLDER/$newreponame"; do
@@ -202,6 +226,7 @@ obligatory_stuff () {
 				printf "$insert" >> "$active_ign_path"
 			fi
 		fi
+		echo "Done."
 	fi
 }
 
@@ -315,7 +340,7 @@ select_git () {
 		fi
 
 	else # the name entered does not exist and should be created
-		echo "Creating '$WD/$GITS_FOLDER/$repo_to_use'"
+		printf "\nCreating '$WD/$GITS_FOLDER/$repo_to_use'\n"
 		# move out .git .gitignore and README.* if found at root dir
 		if not_z "$ACTIVE_GIT_NAME"; then 
 			echo "Moving currently active to $GITS_FOLDER/$ACTIVE_GIT_NAME"
@@ -329,6 +354,7 @@ select_git () {
 		cd "$WD"
 		git init
 	fi
+	echo "Done."
 }
 
 mv_git () {
@@ -398,6 +424,10 @@ get_line_after () {
 	full_line=`grep "^$pattern" "$file"`
 	echo "${full_line:12}"
 }
+is_u_int () {
+	re='^[0-9]+$'
+	[[ $1 =~ $re ]] && return 0 || return 1;
+}
 file_found () { [ -f "$1" ] && return 0 || return 1; }
 file_missing () { [ -f "$1" ] && return 1 || return 0; }
 dir_found ()  { [ -d "$1" ] && return 0 || return 1; }
@@ -411,50 +441,10 @@ num_eq () { [ "$1" -eq "$2" ] && return 0 || return 1; }
 num_gt () { [ "$1" -gt "$2" ] && return 0 || return 1; }
 
 
-read -d '' howto <<"EOF"
-
-## USEAGE
-
-	$ ./gits --install # install gits  
-	$ gits --help      # view help message  
-
-FLAGLESS USEAGE: `gits <name> <git_cmds...>`  
-
-	$ gits                      # list all repository `name`s and show currently active  
-	$ gits [name]               # switch to or initialize a new git repository with `name`  
-	$ gits [name] [git_cmds...] # switch to `name` and run `git git_cmds...`
-	$ gits "" [git_cmds...]     # run `git git_cmds...` for currently active repository  
-  
-GITIGNORE USEAGE: `gits --gitignore <cmd> <name>`  
-NOTE: `-gi` can be used instead of `--gitignore`  
-  
-	$ gits --gitignore [cmd] [name] # run `cmd` on .gitignore for `name` repository  
-	$ gits --gitignore [cmd]        # if not specified, `cmd` is run on active repository  
-	$ gits --gitignore              # if not specified, the `cmd` will be `cat`  
-	$ gits --gitignore "" <name>    # run `cat` on .gitignore for active repository  
-  
-README USEAGE: `gits --readme <cmd> <name>`  
-NOTE: `-rm` can be used instead of `--readme`  
-
-	$ gits --readme [cmd] [name] # run `cmd` on /README.* for `name` repository  
-	$ gits --readme [cmd]        # if not specified, `cmd` is run on active repository  
-	$ gits --readme              # if not specified, the `cmd` will be `cat`  
-	$ gits --readme "" <name>    # run `cat` on /README.*  for active repository  
-  
-NOTE: the feature(s) below are experimental:  
-  
-	$ gits --all [git_commands...]    # run git command for all repositories  
-  
-NOTE: `-a` can be used instead of `--all`  
-
-EOF
-
-echo "$howto"
-
-
 
 ###############################################################################
 ######            EXECUTION STARTS HERE                                  ######
 
 main "$@"
+echo
 
