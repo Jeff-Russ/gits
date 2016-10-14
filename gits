@@ -74,7 +74,7 @@ main () {
 				select_git "$git_name"
 				if not_z "$1"; then 
 					CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
-					git "$CUSTOM_CMD" "$@"
+					not_z "$CUSTOM_CMD" && git "$CUSTOM_CMD" "$@" || git "$@"
 				fi
 			done
 			;;
