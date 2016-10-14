@@ -116,16 +116,7 @@ main () {
 			
 			;;
 		-v|--version) 
-			# echo version (actually alphanum orderable timestamp)
-			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
-			v_desc=`stat -f "%Sm" "$SRC_PATH"`
-			echo "$ver -- $v_desc -- installed"
-			cd "$SRC_DIR"
-			curl -Os https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits-installer > /dev/null
-			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_DIR/gits-installer"`
-			v_desc=`stat -f "%Sm" "$SRC_DIR/gits-installer"`
-			echo "$ver -- $v_desc -- most recent available"
-			rm ./gits-installer
+			check_version "verbose" && echo "running update"
 			;;
 
 		--help) # display some help info
@@ -374,6 +365,30 @@ select_git () {
 		git init
 	fi
 	echo "Done."
+}
+
+check_version () {
+	# echo version (actually alphanum orderable timestamp)
+	loc_ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
+	v_desc=`stat -f "%Sm" "$SRC_PATH"`
+	local message="$loc_ver ($v_desc) installed.\n"
+	local updatefound=1
+
+	cd "$SRC_DIR"
+	curl -Os https://raw.githubusercontent.com/Jeff-Russ/gits/dev/gits-installer > /dev/null
+	avail_ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_DIR/gits-installer"`
+
+	if num_gt "${avail_ver//./}" "${loc_ver//./}"; then
+		v_desc=`stat -f "%Sm" ./gits-installer`
+		message+="There is an update available ($v_desc). Run:\n\n\t$ gits --update\n\n"
+		updatefound=0
+	else
+		message+="You are up to date.\n"
+		updatefound=1
+	fi
+	not_z "$1" && printf "$message"
+	rm ./gits-installer
+	return "$updatefound"
 }
 
 mv_git () {
