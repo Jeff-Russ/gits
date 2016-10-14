@@ -23,12 +23,18 @@ FLAGLESS USEAGE: `gits` <_name_> <_git-commands_...>
 
     $ gits name1          # initialize a new git repository called "name1"  
     $ gits name2          # initialize and switch to new repository called "name2"  
-    $ gits                # lists both names and show name2 as active  
+    $ gits                # lists both names and show name2 as active 
+                          # The list is numbered with indexes starting at 0
     $ gits name1          # switch to name1 as active  
     $ gits name2 status   # switches to name2 and runs `git status`  
     $ gits name2 add -A   # stay on name2 and run `git add -A`  
     $ gits "" add -A      # shorthand for previous 
-  
+
+NUMERIC ARGUMENT
+
+    $ gits [index]        # switch to repository by index
+    $ gits [index] status # switches by index and runs `git status`  
+
 GITIGNORE FLAGS: `gits` [`--gitignore` | `-gi`] <_command_> <_name_>  
   
     $ gits -gi cat name1  # run `cat` on name1's .gitignore (without switching)  
