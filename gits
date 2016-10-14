@@ -132,7 +132,9 @@ main () {
 				curl -O "https://raw.githubusercontent.com/Jeff-Russ/gits/$branch/gits-installer"
 				chmod 755 ./gits-installer
 				./gits-installer --update
-				rm ./gits-installer 
+				rm ./gits-installer
+			else
+				echo "Already up-to-date"
 			fi
 			;;
 		esac
