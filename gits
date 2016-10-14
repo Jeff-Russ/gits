@@ -115,8 +115,10 @@ main () {
 			fi
 			
 			;;
-		-v|--version) 
-			check_version "verbose" && echo "running update"
+		-v|--version)
+			shift # next arg is secret option to compare against other branch versions
+			not_z "$1" && branch="$1" || branch="master"
+			check_version "$branch" "verbose"
 			;;
 
 		--help) # display some help info
@@ -375,7 +377,8 @@ check_version () {
 	local updatefound=1
 
 	cd "$SRC_DIR"
-	curl -Os https://raw.githubusercontent.com/Jeff-Russ/gits/dev/gits-installer > /dev/null
+	# $1 is branch name which should default to "master"
+	curl -Os "https://raw.githubusercontent.com/Jeff-Russ/gits/$1/gits-installer" > /dev/null
 	avail_ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_DIR/gits-installer"`
 
 	if num_gt "${avail_ver//./}" "${loc_ver//./}"; then
@@ -386,7 +389,7 @@ check_version () {
 		message+="You are up to date.\n"
 		updatefound=1
 	fi
-	not_z "$1" && printf "$message"
+	not_z "$2" && printf "$message"
 	rm ./gits-installer
 	return "$updatefound"
 }
