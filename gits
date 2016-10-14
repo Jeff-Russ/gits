@@ -114,20 +114,37 @@ main () {
 				fi
 			fi
 			
-
-
 			;;
 		-v|--version) 
 			# echo version (actually alphanum orderable timestamp)
 			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
 			v_desc=`stat -f "%Sm" "$SRC_PATH"`
-			echo "$ver -- $v_desc"
+			echo "$ver -- $v_desc -- installed"
+			cd "$SRC_DIR"
+			curl -Os https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits-installer > /dev/null
+			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_DIR/gits-installer"`
+			v_desc=`stat -f "%Sm" "$SRC_DIR/gits-installer"`
+			echo "$ver -- $v_desc -- most recent available"
+			rm ./gits-installer
 			;;
 
 		--help) # display some help info
 			man "$SRC_DIR/GITS.1"
 			;;
-
+		-u|--update) 
+			ver_loc=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
+			cd "$SRC_DIR"
+			curl -Os https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits-installer > /dev/null
+			ver_avail=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_DIR/gits-installer"`
+			if not_z "$ver_loc" "$ver_avail"; then 
+				echo "A newer version is available and will be installed."
+				chmod 755 ./gits-installer
+				./gits-installer --update
+			else
+				echo "Already up to date!"
+			fi
+			rm ./gits-installer
+			;;
 		esac
 	fi
 }
