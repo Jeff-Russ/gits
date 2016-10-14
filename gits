@@ -125,18 +125,15 @@ main () {
 			man "$SRC_DIR/GITS.1"
 			;;
 		-u|--update) 
-			ver_loc=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
-			cd "$SRC_DIR"
-			curl -Os https://raw.githubusercontent.com/Jeff-Russ/gits/master/gits-installer > /dev/null
-			ver_avail=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_DIR/gits-installer"`
-			if not_z "$ver_loc" "$ver_avail"; then 
-				echo "A newer version is available and will be installed."
+			shift # next arg is secret option to compare against other branch versions
+			not_z "$1" && branch="$1" || branch="master"
+			if check_version "$branch" ; then 
+				echo "available update found ... downloading update ..."
+				curl -O "https://raw.githubusercontent.com/Jeff-Russ/gits/$branch/gits-installer"
 				chmod 755 ./gits-installer
 				./gits-installer --update
-			else
-				echo "Already up to date!"
+				rm ./gits-installer 
 			fi
-			rm ./gits-installer
 			;;
 		esac
 	fi
