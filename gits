@@ -90,42 +90,6 @@ main () {
 			man "$SRC_DIR/GITS.1"
 			;;
 
-		--install) # suggested installation method
-			if dir_missing "$HOME/bin"; then
-				echo "making ~/bin directory"
-				mkdir "$HOME/bin"
-			fi
-			INSPATH="export PATH=\$PATH:\"$HOME/bin\""
-			if not_in_path "$HOME/bin"; then
-				echo "appending ~/.bash_profile to add ~/bin to \$PATH"
-				echo "$INSPATH" >> "$HOME/.bash_profile"
-			fi
-			echo "moving this script to ~/bin/gits"
-			if cp -u "$SRC_PATH" "$HOME/bin/gits"; then 
-				echo "Done."
-				rm "$SRC_PATH"
-			else
-				echo "Looks like ~/bin/gits might be a newer version than this one!"
-			fi
-			;;
-
-		-cp) # -cp "copy" is same as install but doesn't self delete
-			dir_missing "$HOME/bin" && mkdir "$HOME/bin"
-			INSPATH="export PATH=\$PATH:\"$HOME/bin\""
-			not_in_path "$HOME/bin" && echo "$INSPATH" >> "$HOME/.bash_profile"
-			cp "$SRC_PATH" "$HOME/bin/gits"
-			;;
-
-		--path) # quick+temp add to path: run this -> $ source ./gits --path
-			check_script_call=$(history |tail -1|grep "source ./gits --path")
-			if [ -z "$check_script_call" ];then
-				printf "\nThis file should be called as a source. Try again this way:"
-				printf "\n\n\t$ source ./gits --path\n"
-				exit 1
-			else export PATH="$PATH:$SRC_DIR"
-			fi
-			;;
-
 		esac
 	fi
 }
