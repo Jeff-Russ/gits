@@ -62,7 +62,7 @@ $ gits \-rm cat name1  # run `cat` on name1's /README.* (without switching)
 $ gits \-rm vim name2  # open name2's /README.* in vim
 $ gits \-rm vim        # since name2 is active, this is shorthand for previous
 $ gits \-rm            # if not specified, the command defaults to `cat`  
-$ get \-\-readme     # long way to to previous et al
+$ get \-\-readme        # long way to to previous et al
 $ gits \-rm "" name2   # `""` will default to `cat`
 .fi
 .RE
@@ -76,6 +76,17 @@ ALL FLAGS: \fB\fCgits\fR [\fB\fC\-\-all\fR | \fB\fC\-a\fR] [\fIgit\-commands\fP\
 \fB\fC\-all\fR or \fB\fC\-a\fR runs git 
 .BR command (s) 
 for all repositories  
+.PP
+SET DIRECTORY FLAG: 
+.PP
+.RS
+.nf
+$ gits \-d ./subdir      # sets top\-level dir for active repo to .subdir
+$ gits \-\-set\-dir subdir # same as above
+$ gits "" add .         # runs: git \-\-work\-tree=subdir add .
+$ git add .             # avoid this since it will move the directory up!
+.fi
+.RE
 .SH DESCRIPTION
 .PP
 \fB\fCgits\fR is a wrapper around the git command can be used as an alternative to Git Submodules. Unlike Git Submodules, all \fB\fC\&.gitignore\fR files \fB\fC\&.git/\fR directories are kept in a central location at the top directory and are moved in and out, depending on which you want to run commands on. The multiple repositories all share the same main working tree (top level directory) unless you override this with custom commands. In other words, you will run everything from the same location.  

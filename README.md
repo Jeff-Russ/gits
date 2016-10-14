@@ -51,13 +51,20 @@ README FLAGS: `gits` [`--readme` | `-rm`] <_command_> <_name_>
     $ gits -rm vim name2  # open name2's /README.* in vim
     $ gits -rm vim        # since name2 is active, this is shorthand for previous
     $ gits -rm            # if not specified, the command defaults to `cat`  
-    $ get --readme     # long way to to previous et al
+    $ get --readme        # long way to to previous et al
     $ gits -rm "" name2   # `""` will default to `cat`
 
 WARNING: the feature(s) below are experimental:  
 
 ALL FLAGS: `gits` [`--all` | `-a`] \[_git-commands_...]  
 `-all` or `-a` runs git command(s) for all repositories  
+
+SET DIRECTORY FLAG: 
+
+    $ gits -d ./subdir      # sets top-level dir for active repo to .subdir
+    $ gits --set-dir subdir # same as above
+    $ gits "" add .         # runs: git --work-tree=subdir add .
+    $ git add .             # avoid this since it will move the directory up!
 
 DESCRIPTION
 ------------
@@ -121,7 +128,6 @@ Beside creating and switching repository, you might also want to use `gits` inst
 `gits` will look for a line starting `#CUSTOM_CMD=` in the respective `.gitignore` and use whatever follows the `=` to the end of the line as the custom command.  
 
 Keep in mind the the actual `git` command is never run by `gits` when the second argument is a flag. It is only run when the second argument is the name assigned to the repository or `""`, which is a shortcut for the currently active repository name.  
-
 
 AUTHOR
 ------

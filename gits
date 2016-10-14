@@ -45,7 +45,13 @@ main () {
 
 		if not_z "$1"; then 
 			CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
-			not_z "$CUSTOM_CMD" && git "$CUSTOM_CMD" "$@" || git "$@"
+			if not_z "$CUSTOM_CMD"; then
+				echo "running $ git $CUSTOM_CMD $@"
+				git "$CUSTOM_CMD" "$@"
+			else
+				echo "running $ git $@"
+				git "$@"
+			fi
 			
 		fi # script exits
 
@@ -79,6 +85,38 @@ main () {
 			done
 			;;
 
+		-d|--set-dir) # set custom command with --work-tree
+			shift
+			obligatory_stuff
+
+			if is_z "$ACTIVE_GIT_NAME"; then
+				printf "\nYou must have an active git to perform this operation.\n\n"
+				exit 1
+			else
+				CUSTOM_CMD=`get_line_after "$WD/.gitignore" "#CUSTOM_CMD="`
+			fi
+
+			if is_z "$1"; then 
+				is_z "$CUSTOM_CMD" && printf "\nNothing set.\n" || printf "$CUSTOM_CMD"
+			else 
+				if dir_missing "$1"; then 
+					printf "\nInvalid path!\n\n"; exit 1
+				else
+					if is_z "$CUSTOM_CMD"; then
+						del_line_containing "#CUSTOM_CMD=" "$WD/.gitignore"
+						echo >> "$WD/.gitignore"
+						echo "Setting working tree for this $ACTIVE_GIT_NAME to $1"
+						echo "#CUSTOM_CMD=--work-tree=$1" >> "$WD/.gitignore"
+						echo "Done."
+					else
+						printf "\nCustom command already found! Aborting.\n\n"; exit 1
+					fi
+				fi
+			fi
+			
+
+
+			;;
 		-v|--version) 
 			# echo version (actually alphanum orderable timestamp)
 			ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
@@ -146,7 +184,7 @@ obligatory_stuff () {
 
 		exit_for_errors #()
 		# we now have a value we can trust for ACTIVE_GIT_NAME so we can add it to list
-
+		echo
 		for i in "${!ALL_GIT_NAMES[@]}"; do
 			if str_eq "${ALL_GIT_NAMES[$i]}" "${ACTIVE_GIT_NAME}" ; then
 				SELECTION_MENU[$i]="${SELECTION_MENU[$i]} <-ACTIVE"
@@ -388,6 +426,20 @@ get_line_after () {
 	full_line=`grep "^$pattern" "$file"`
 	echo "${full_line:12}"
 }
+get_line_num () { # $1 is pattern $2 is file
+	result=`grep -n "$1" "$2" | grep -Eo '^[^:]+'`
+	echo "$result"
+}
+del_line_num () { # $1 is line number $2 is file
+	file=`sed -e "$1d" "$2"`
+	printf "$file" > "$2"
+}
+del_line_containing () {
+	num=`grep -n "$1" "$2" | grep -Eo '^[^:]+'`
+	file=`sed -e "${num}d" "$2"`
+	printf "$file" > "$2"
+}
+
 is_u_int () {
 	re='^[0-9]+$'
 	[[ $1 =~ $re ]] && return 0 || return 1;
