@@ -27,7 +27,6 @@ cancel_exit () {
 warn_msg () {
 	printf "\nWARNING: $1\n"
 }
-
 # $1 is partial url (minus path, which is $2). $2 is also file name locally
 try_dl_file () { 
 	[ -f "./$2" ] && rm "./$2"
@@ -38,60 +37,77 @@ try_dl_file () {
 
 # VARS ________________________________________________________________________
 
-is_z "$1" && branch="master" || branch="$1"
-
+is_z "$2" && branch="master" || branch="$2"
 GH_URL="https://raw.githubusercontent.com/Jeff-Russ/gits/$branch/"
+BIN="$HOME/bin"
+TMP="$BIN/gits_temp"
+APND="export PATH=\$PATH:\"$BIN\""
+
+if str_eq "$3" "--verbose"; then 
+	if_dbug () { return 0; }
+else
+	if_dbug () { return 1; }
+fi
 
 #  ~/bin directory ____________________________________________________________
 
-if dir_missing "$HOME/bin"; then
-
-	printf "making ~/bin directory ... "
-	mkdir "$HOME/bin" && echo "Done." || exiterr "mkdir $HOME/bin failed."
-
- else echo "$HOME/bin found ... "
+if_dbug && echo "seeing if we need to mkdir $BIN..."
+if dir_missing "$BIN"; then 
+	mkdir "$BIN" || exiterr "mkdir $BIN failed."
+fi
+if_dbug && echo "seeing if we need to add it to \$PATH"
+if not_in_path "$BIN"; then 
+	echo "$APND" >> "$HOME/.bash_profile" || exiterr "append failed."
 fi
 
-
-if not_in_path "$HOME/bin"; then
-
-	printf "appending ~/.bash_profile to add ~/bin to \$PATH... "
-	apnd="export PATH=\$PATH:\"$HOME/bin\""
-	echo "$apnd" >> "$HOME/.bash_profile" && echo "Done." || exiterr "append failed."
-
- else echo "~/bin was already added to PATH."
-fi
-
-BIN="$HOME/bin"
-cd "$HOME/bin"
+if_dbug && echo "cd to ~/bin"
+cd "$BIN"
 
 if str_eq "$1" "--update"; then 
-	TMP="$HOME/bin/gits_temp"
+	if_dbug && echo "we are in update mode. Removing $TMP if found..."
 	dir_found "$TMP" && rm -rf "$TMP"
-
+	
+	if_dbug && echo "Moving ~/bin/gits to ~/bin/gits_temp if found..."
 	file_found "$BIN/gits" && mv "$BIN/gits" "$TMP/gits"
+	
+	if_dbug && echo "Moving ~/bin/gits-version.txt to ~/bin/gits_temp if found..."
 	file_found "$BIN/gits-version.txt" && mv "$BIN/gits-version.txt" "$TMP/gits-version.txt"
+	
+	if_dbug && echo "Moving ~/bin/GITS.1 to ~/bin/gits_temp if found..."
 	file_found "$BIN/GITS.1" && mv "$BIN/GITS.1" "$TMP/GITS.1"
-
-	printf "Downloading version info... "
-	try_dl_file "$GH_URL" "gits-version.txt" && printf "Done.\n" || cancel_exit "download failed."
-	printf "Downloading executable... "
-	try_dl_file "$GH_URL" "gits" && printf "Done.\n" || cancel_exit "download failed."
-	chmod 755 "$GH_URL/gits" || cancel_exit "operation failed."
-	printf "Downloading help page... "
-	try_dl_file "$GH_URL" "GITS.1" && printf "Done.\n" || cancel_exit "download failed."
+	
+	if_dbug && echo "$GH_URL/gits-version.txt download with curl..."
+	try_dl_file "$GH_URL" "gits-version.txt" || cancel_exit "$GH_URL/gits-version.txt download failed."
+	
+	if_dbug && echo "$GH_URL/gits download with curl..."
+	try_dl_file "$GH_URL" "gits" || cancel_exit "$GH_URL/gits download failed."
+	
+	if_dbug echo "chmod 755 ~/bin/gits..."
+	chmod 755 "$BIN/gits" || cancel_exit "chmod 755 ~/bin/gits operation failed."
+	
+	if_dbug && echo "$GH_URL/GITS.1 download with curl..."
+	try_dl_file "$GH_URL" "GITS.1" || cancel_exit "$GH_URL/GITS.1 download failed."
+	
 	printf "\nInstallation complete. Cleaning up... "
 	rm -rf "$TMP"
 	printf "Done.\n\n"
 else
+	if_dbug && echo "we are NOT in update mode. Aborting if $BIN/gits if found..."
 	file_found "$BIN/gits" && exiterr "previous installation found. Run again with --update"
-
-	printf "Downloading version info... "
-	try_dl_file "$GH_URL" "gits-version.txt" && printf "Done.\n" || warn_msg "download failed."
-	printf "Downloading executable... "
-	try_dl_file "$GH_URL" "gits" && printf "Done.\n" || warn_msg "download failed."
-	chmod 755 "$GH_URL/gits" || warn_msg "operation failed."
-	printf "Downloading help page... "
-	try_dl_file "$GH_URL" "GITS.1" && printf "Done.\n" || warn_msg "download failed."
+	
+	if_dbug && echo "$GH_URL/gits-version.txt download with curl..."
+	try_dl_file "$GH_URL" "gits-version.txt" || warn_msg "$GH_URL/gits-version.txt download failed."
+	
+	if_dbug && echo "$GH_URL/gits download with curl..."
+	try_dl_file "$GH_URL" "gits" || warn_msg "$GH_URL/gits download failed."
+	
+	if_dbug && echo "chmod 755 ~/bin/gits..."
+	chmod 755 "$BIN/gits" || warn_msg "operation failed."
+	
+	if_dbug && echo "$GH_URL/GITS.1 download with curl..."
+	try_dl_file "$GH_URL" "GITS.1" || warn_msg "$GH_URL/GITS.1 download failed."
+	
 	printf "\nInstallation complete.\n\n"
 fi
+
+
