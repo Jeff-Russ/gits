@@ -369,27 +369,34 @@ select_git () {
 }
 
 check_version () {
-	# echo version (actually alphanum orderable timestamp)
-	loc_ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_PATH"`
-	v_desc=`stat -f "%Sm" "$SRC_PATH"`
-	local message="$loc_ver ($v_desc) installed.\n"
-	local updatefound=1
 
-	cd "$SRC_DIR"
+	loc_ver=`cat "$SRC_DIR/gits-version"`
+	message="$loc_ver currently installed.\n"
+
+	cd /tmp
+	file_found ./gits-version && rm ./gits-version
 	# $1 is branch name which should default to "master"
-	curl -Os "https://raw.githubusercontent.com/Jeff-Russ/gits/$1/gits-installer" > /dev/null
-	avail_ver=`stat -f "%Sm" -t "%y%m%d.%H%M" "$SRC_DIR/gits-installer"`
+	curl -Ofs "https://raw.githubusercontent.com/Jeff-Russ/gits/$1/gits-version" > /dev/null
 
-	if num_gt "${avail_ver//./}" "${loc_ver//./}"; then
-		v_desc=`stat -f "%Sm" ./gits-installer`
-		message+="There is an update available ($v_desc). Run:\n\n\t$ gits --update\n\n"
-		updatefound=0
+	if file_found ./gits-version ; then
+		echo "curl didn't fail"
+		avail_ver=`cat ./gits-version`
+		loc_num=${loc_ver%% *} # returns up to first space like: 161014.1854
+		avail_nun=${avail_ver%% *}
+		# next we'll strip the decimal point:
+		if num_gt "${avail_ver//./}" "${loc_ver//./}"; then
+			message+="There is an update available ($avail_ver). Run:\n\n\t$ gits --update\n\n"
+			updatefound=0
+		else
+			message+="You are up-to-date.\n"
+			updatefound=1
+		fi
+		rm ./gits-version
 	else
-		message+="You are up to date.\n"
+		message+="Error fetching update information.\n"
 		updatefound=1
 	fi
 	not_z "$2" && printf "$message"
-	rm ./gits-installer
 	return "$updatefound"
 }
 
