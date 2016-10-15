@@ -381,10 +381,10 @@ check_version () {
 	if file_found ./gits-version.txt ; then
 		avail_ver=`cat ./gits-version.txt`
 		loc_num=${loc_ver%% *} # returns up to first space like: 161014.1854
-		avail_nun=${avail_ver%% *}
+		avail_num=${avail_ver%% *}
 		# next we'll strip the decimal point:
-		if num_gt "${avail_ver//./}" "${loc_ver//./}"; then
-			message+="There is an update available ($avail_ver). Run:\n\n\t$ gits --update\n\n"
+		if num_gt "${avail_num//./}" "${loc_num//./}"; then
+			message+="There is an update available ($avail_ver). Run:\n\n\t$ gits --update\n"
 			updatefound=0
 		else
 			message+="You are up-to-date.\n"
