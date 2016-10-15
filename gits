@@ -135,7 +135,7 @@ main () {
 
 				if file_found ./gits-installer ; then
 					chmod 755 ./gits-installer
-					./gits-installer --update
+					./gits-installer --update "$branch"
 					rm ./gits-installer
 				else
 					echo "ERROR: could not download update"
