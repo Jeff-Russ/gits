@@ -3,6 +3,6 @@
 loc_ver=`stat -f "%Sm" -t "%y%m%d.%H%M" ./gits`
 v_desc=`stat -f "%Sm" ./gits`
 
-echo "$loc_ver ($v_desc)" > gits-version
+echo "$loc_ver ($v_desc)" > gits-version.txt
 md2man-roff README.md > GITS.1
 
