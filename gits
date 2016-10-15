@@ -135,7 +135,7 @@ main () {
 				cd "$SRC_DIR"
 				if try_dl_file "$GH_RAW/$branch" "gits-installer"; then 
 					chmod 755 ./gits-installer
-					./gits-installer --update "$branch"
+					./gits-installer --update "$@"
 				else
 					echo "ERROR: could not download update"
 				fi

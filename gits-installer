@@ -33,23 +33,60 @@ try_dl_file () {
 	curl -Ofs "$1/$2" > /dev/null
 	[ -f "$2" ] && return 0 || return 1;
 }
-
+has_arg_option () {
+	# alway set arg_option first, then call like:
+	# if has_arg_option "$@"; then 
+	result=1
+	for arg in "$@"; do 
+		if [[ "$arg" = "$arg_option" ]]; then
+			result=0
+			break
+		fi
+		shift
+	done
+	return $result
+}
+get_arg_option () {
+    # alway set arg_option first, then call like:
+    # value=$(get_arg_option  "$@")
+    # or
+    # if value=$(get_arg_option  "$@") ; then 
+    # or 
+    # var=$(get_arg_option  "$@") || var="default"
+    result=1
+    for arg in "$@"; do 
+        if [ "$result" -eq "0" ]; then
+            echo "$arg"
+            break
+        fi
+        [[ "$arg" = "$arg_option" ]] && result=0
+        shift
+    done
+    return $result
+}
 
 # VARS ________________________________________________________________________
 
-is_z "$2" && branch="master" || branch="$2"
-GH_URL="https://raw.githubusercontent.com/Jeff-Russ/gits/$branch/"
-BIN="$HOME/bin"
+arg_option="--branch"
+BRANCH=$(get_arg_option  "$@") || BRANCH="master"
+GH_URL="https://raw.githubusercontent.com/Jeff-Russ/gits/$BRANCH/"
+
+arg_option="--bin-path"
+BIN=$(get_arg_option  "$@") || BIN="$HOME/bin"
 TMP="$BIN/gits_temp"
 APND="export PATH=\$PATH:\"$BIN\""
 
-if str_eq "$3" "--verbose"; then 
+arg_option="--path-src"
+PATH_SRC=$(get_arg_option  "$@") || PATH_SRC="$HOME/.bash_profile"
+
+arg_option="--verbose"
+if has_arg_option  "$@"; then 
 	if_dbug () { return 0; }
 else
 	if_dbug () { return 1; }
 fi
 
-#  ~/bin directory ____________________________________________________________
+#  $BIN directory ____________________________________________________________
 
 if_dbug && echo "seeing if we need to mkdir $BIN..."
 if dir_missing "$BIN"; then 
@@ -57,24 +94,25 @@ if dir_missing "$BIN"; then
 fi
 if_dbug && echo "seeing if we need to add it to \$PATH"
 if not_in_path "$BIN"; then 
-	echo "$APND" >> "$HOME/.bash_profile" || exiterr "append failed."
+	echo "$APND" >> "$PATH_SRC" || exiterr "append failed."
 fi
 
-if_dbug && echo "cd to ~/bin"
+if_dbug && echo "cd to $BIN"
 cd "$BIN"
 
-if str_eq "$1" "--update"; then 
+arg_option="--update"
+if has_arg_option "$@"; then 
 	if_dbug && echo "we are in update mode. Removing $TMP if found..."
 	dir_found "$TMP" && rm -rf "$TMP"
 	mkdir "$TMP" || exiterr "mkdir $TMP failed."
 	
-	if_dbug && echo "Moving ~/bin/gits to ~/bin/gits_temp if found..."
+	if_dbug && echo "Moving $BIN/gits to $BIN/gits_temp if found..."
 	file_found "$BIN/gits" && mv "$BIN/gits" "$TMP"
 	
-	if_dbug && echo "Moving ~/bin/gits-version.txt to ~/bin/gits_temp if found..."
+	if_dbug && echo "Moving $BIN/gits-version.txt to $BIN/gits_temp if found..."
 	file_found "$BIN/gits-version.txt" && mv "$BIN/gits-version.txt" "$TMP"
 	
-	if_dbug && echo "Moving ~/bin/GITS.1 to ~/bin/gits_temp if found..."
+	if_dbug && echo "Moving $BIN/GITS.1 to $BIN/gits_temp if found..."
 	file_found "$BIN/GITS.1" && mv "$BIN/GITS.1" "$TMP"
 	
 	if_dbug && echo "$GH_URL/gits-version.txt download with curl..."
@@ -83,8 +121,8 @@ if str_eq "$1" "--update"; then
 	if_dbug && echo "$GH_URL/gits download with curl..."
 	try_dl_file "$GH_URL" "gits" || cancel_exit "$GH_URL/gits download failed."
 	
-	if_dbug echo "chmod 755 ~/bin/gits..."
-	chmod 755 "$BIN/gits" || cancel_exit "chmod 755 ~/bin/gits operation failed."
+	if_dbug echo "chmod 755 $BIN/gits..."
+	chmod 755 "$BIN/gits" || cancel_exit "chmod 755 $BIN/gits operation failed."
 	
 	if_dbug && echo "$GH_URL/GITS.1 download with curl..."
 	try_dl_file "$GH_URL" "GITS.1" || cancel_exit "$GH_URL/GITS.1 download failed."
@@ -102,7 +140,7 @@ else
 	if_dbug && echo "$GH_URL/gits download with curl..."
 	try_dl_file "$GH_URL" "gits" || warn_msg "$GH_URL/gits download failed."
 	
-	if_dbug && echo "chmod 755 ~/bin/gits..."
+	if_dbug && echo "chmod 755 $BIN/gits..."
 	chmod 755 "$BIN/gits" || warn_msg "operation failed."
 	
 	if_dbug && echo "$GH_URL/GITS.1 download with curl..."
