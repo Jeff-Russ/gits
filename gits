@@ -5,6 +5,7 @@ shopt -s dotglob # for access to hidden items
 WD="$(pwd)" # might as well just set this here. It's the caller's full path
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # this scripts dir path
 SRC_PATH="$SRC_DIR/$(basename "${BASH_SOURCE[0]}")" # and this script's path
+GH_RAW="https://raw.githubusercontent.com/Jeff-Russ/gits"
 
 ###############################################################################
 ######                Arg Parsing Function                               ######
@@ -130,13 +131,10 @@ main () {
 			if check_version "$branch" ; then 
 				echo "available update found ... downloading update ..."
 				cd /tmp
-				file_found ./gits-installer && rm ./gits-installer
-				curl -Of "https://raw.githubusercontent.com/Jeff-Russ/gits/$branch/gits-installer"
-
-				if file_found ./gits-installer ; then
+				if try_dl_file "$GH_RAW/$branch" "gits-installer"; then 
 					chmod 755 ./gits-installer
 					./gits-installer --update "$branch"
-					rm ./gits-installer
+					# rm ./gits-installer
 				else
 					echo "ERROR: could not download update"
 				fi
@@ -381,23 +379,21 @@ check_version () {
 	message="$loc_ver currently installed.\n"
 
 	cd /tmp
-	file_found ./gits-version.txt && rm ./gits-version.txt
 	# $1 is branch name which should default to "master"
-	curl -Ofs "https://raw.githubusercontent.com/Jeff-Russ/gits/$1/gits-version.txt" > /dev/null
-
-	if file_found ./gits-version.txt ; then
+	if try_dl_file "$GH_RAW/$1" "gits-version.txt"; then
 		avail_ver=`cat ./gits-version.txt`
+		message+="$avail_ver most recent version available\n"
 		loc_num=${loc_ver%% *} # returns up to first space like: 161014.1854
 		avail_num=${avail_ver%% *}
 		# next we'll strip the decimal point:
 		if num_gt "${avail_num//./}" "${loc_num//./}"; then
-			message+="There is an update available ($avail_ver). Run:\n\n\t$ gits --update\n"
+			message+="\nThere is an update available. Run:\t$ gits --update\n"
 			updatefound=0
 		else
 			message+="You are up-to-date.\n"
 			updatefound=1
 		fi
-		# rm ./gits-version.txt
+		rm ./gits-version.txt
 	else
 		message+="Error fetching update information.\n"
 		updatefound=1
@@ -486,7 +482,12 @@ del_line_containing () {
 	file=`sed -e "${num}d" "$2"`
 	printf "$file" > "$2"
 }
-
+# $1 is partial url (minus path, which is $2). $2 is also file name locally
+try_dl_file () { 
+	[ -f "./$2" ] && rm "./$2"
+	curl -Ofs "$1/$2" > /dev/null
+	[ -f "$2" ] && return 0 || return 1;
+}
 is_u_int () {
 	re='^[0-9]+$'
 	[[ $1 =~ $re ]] && return 0 || return 1;

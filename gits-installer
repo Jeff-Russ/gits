@@ -2,20 +2,39 @@
 
 # funcs _______________________________________________________________________
 
-exiterr () {
-	printf "\nERROR: $1\nNow exiting...\n"
-	exit 1
-}
-warning_mgs () {
-	printf "\nWARNING: $1\n"
-}
-
 not_in_path () { echo "$PATH"|grep -q "$1" && return 1 || return 0; }
 dir_missing ()  { [ -d "$1" ] && return 1 || return 0; }
 dir_found ()  { [ -d "$1" ] && return 0 || return 1; }
 file_found () { [ -f "$1" ] && return 0 || return 1; }
 str_eq () { [[ "$1" = "$2" ]] && return 0 || return 1; }
 is_z () { [[ -z "$1" ]] && return 0 || return 1; }
+
+exiterr () {
+	printf "\nERROR: $1\nNow exiting...\n"
+	exit 1
+}
+cancel_exit () {
+	file_found "$BIN/gits" && rm "$BIN/gits"
+	file_found "$BIN/gits-version.txt" && rm "$BIN/gits-version.txt"
+	file_found "$BIN/GITS.1" && rm "$BIN/GITS.1"
+
+	file_found "$TMP/gits" && mv "$TMP/gits" "$BIN/gits"
+	file_found "$TMP/gits-version.txt" && mv "$TMP/gits-version.txt" "$BIN/gits-version.txt"
+	file_found "$TMP/GITS.1" && mv "$TMP/GITS.1" "$BIN/GITS.1"
+	printf "\nERROR: $1\nRestoring previous install and exiting...\n"
+	exit 1
+}
+warn_msg () {
+	printf "\nWARNING: $1\n"
+}
+
+# $1 is partial url (minus path, which is $2). $2 is also file name locally
+try_dl_file () { 
+	[ -f "./$2" ] && rm "./$2"
+	curl -Ofs "$1/$2" > /dev/null
+	[ -f "$2" ] && return 0 || return 1;
+}
+
 
 # VARS ________________________________________________________________________
 
@@ -43,49 +62,36 @@ if not_in_path "$HOME/bin"; then
  else echo "~/bin was already added to PATH."
 fi
 
+BIN="$HOME/bin"
 cd "$HOME/bin"
 
-#  prep if --update ____________________________________________________________
-
 if str_eq "$1" "--update"; then 
-	tmp="$HOME/bin/gits_temp"
-	if dir_missing "$tmp"; then
-		mkdir "$tmp" || exiterr "mkdir ~bin/gits_temp failed."
-	fi
-fi
+	TMP="$HOME/bin/gits_temp"
+	dir_found "$TMP" && rm -rf "$TMP"
 
-#  gits executable ____________________________________________________________
+	file_found "$BIN/gits" && mv "$BIN/gits" "$TMP/gits"
+	file_found "$BIN/gits-version.txt" && mv "$BIN/gits-version.txt" "$TMP/gits-version.txt"
+	file_found "$BIN/GITS.1" && mv "$BIN/GITS.1" "$TMP/GITS.1"
 
-if file_found "$HOME/bin/gits"; then 
-	if str_eq "$1" "--update"; then 
-		mv "$HOME/bin/gits" "$tmp/gits" || exiterr "mv ~/bin/gits $dtmp/gits failed."
-		file_found "$HOME/bin/gits-version" && mv "$HOME/bin/gits-version" "$tmp/gits"
-	else
-		exiterr "previous installation found. Run again with --update"
-	fi
-fi
-printf "downloading gits command executable... "
-curl -O "$GH_URL/gits" && echo "Done." || exiterr "curl -O $GH_URL/gits failed."
-curl -O "$GH_URL/gits-version" || exiterr "curl -O $GH_URL/gits-version failed."
-chmod 755 "$HOME/bin/gits" || warning_mgs "unable to run 755 ~/bin/gits"
+	printf "Downloading version info... "
+	try_dl_file "$GH_URL" "gits-version.txt" && printf "Done.\n" || cancel_exit "download failed."
+	printf "Downloading executable... "
+	try_dl_file "$GH_URL" "gits" && printf "Done.\n" || cancel_exit "download failed."
+	chmod 755 "$GH_URL/gits" || cancel_exit "operation failed."
+	printf "Downloading help page... "
+	try_dl_file "$GH_URL" "GITS.1" && printf "Done.\n" || cancel_exit "download failed."
+	printf "\nInstallation complete. Cleaning up... "
+	rm -rf "$TMP"
+	printf "Done.\n\n"
+else
+	file_found "$BIN/gits" && exiterr "previous installation found. Run again with --update"
 
-
-#  man page ___________________________________________________________________
-
-if file_found "$HOME/bin/GITS.1"; then 
-	if str_eq "$1" "--update"; then 
-		mv "$HOME/bin/GITS.1" "$tmp/gits" || exiterr "mv ~/bin/GITS.1 $dtmp/GITS.1 failed."
-	else
-		exiterr "previous installation found. Run again with --update"
-	fi
-fi
-
-
-# cleanup if --update ____________________________________________________________
-
-if str_eq "$1" "--update"; then 
-	file_found "$HOME/bin/gits_temp/gits" && rm "$HOME/bin/gits_temp/gits"
-	file_found "$HOME/bin/gits_temp/GITS.1" && rm "$HOME/bin/gits_temp/GITS.1"
-	contents="$(ls -A "$HOME/bin/gits_temp/")" 
-	is_z "$contents" && rm -rf "$HOME/bin/gits_temp/"
+	printf "Downloading version info... "
+	try_dl_file "$GH_URL" "gits-version.txt" && printf "Done.\n" || warn_msg "download failed."
+	printf "Downloading executable... "
+	try_dl_file "$GH_URL" "gits" && printf "Done.\n" || warn_msg "download failed."
+	chmod 755 "$GH_URL/gits" || warn_msg "operation failed."
+	printf "Downloading help page... "
+	try_dl_file "$GH_URL" "GITS.1" && printf "Done.\n" || warn_msg "download failed."
+	printf "\nInstallation complete.\n\n"
 fi
