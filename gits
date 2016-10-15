@@ -376,10 +376,9 @@ check_version () {
 	cd /tmp
 	file_found ./gits-version && rm ./gits-version
 	# $1 is branch name which should default to "master"
-	curl -Ofs "https://raw.githubusercontent.com/Jeff-Russ/gits/$1/gits-version" > /dev/null
+	curl -Ofs "https://raw.githubusercontent.com/Jeff-Russ/gits/$1/gits-version"
 
 	if file_found ./gits-version ; then
-		echo "curl didn't fail"
 		avail_ver=`cat ./gits-version`
 		loc_num=${loc_ver%% *} # returns up to first space like: 161014.1854
 		avail_nun=${avail_ver%% *}
@@ -391,7 +390,7 @@ check_version () {
 			message+="You are up-to-date.\n"
 			updatefound=1
 		fi
-		rm ./gits-version
+		# rm ./gits-version
 	else
 		message+="Error fetching update information.\n"
 		updatefound=1
