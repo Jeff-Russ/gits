@@ -130,11 +130,12 @@ main () {
 			not_z "$1" && branch="$1" || branch="master"
 			if check_version "$branch" ; then 
 				echo "available update found ... downloading update ..."
-				cd /tmp
+				file_found "$SRC_DIR/gits-installer" && rm "$SRC_DIR/gits-installer"
+
+				cd "$SRC_DIR"
 				if try_dl_file "$GH_RAW/$branch" "gits-installer"; then 
 					chmod 755 ./gits-installer
 					./gits-installer --update "$branch"
-					# rm ./gits-installer
 				else
 					echo "ERROR: could not download update"
 				fi
