@@ -66,15 +66,16 @@ cd "$BIN"
 if str_eq "$1" "--update"; then 
 	if_dbug && echo "we are in update mode. Removing $TMP if found..."
 	dir_found "$TMP" && rm -rf "$TMP"
+	mkdir "$TMP" || exiterr "mkdir $TMP failed."
 	
 	if_dbug && echo "Moving ~/bin/gits to ~/bin/gits_temp if found..."
-	file_found "$BIN/gits" && mv "$BIN/gits" "$TMP/gits"
+	file_found "$BIN/gits" && mv "$BIN/gits" "$TMP"
 	
 	if_dbug && echo "Moving ~/bin/gits-version.txt to ~/bin/gits_temp if found..."
-	file_found "$BIN/gits-version.txt" && mv "$BIN/gits-version.txt" "$TMP/gits-version.txt"
+	file_found "$BIN/gits-version.txt" && mv "$BIN/gits-version.txt" "$TMP"
 	
 	if_dbug && echo "Moving ~/bin/GITS.1 to ~/bin/gits_temp if found..."
-	file_found "$BIN/GITS.1" && mv "$BIN/GITS.1" "$TMP/GITS.1"
+	file_found "$BIN/GITS.1" && mv "$BIN/GITS.1" "$TMP"
 	
 	if_dbug && echo "$GH_URL/gits-version.txt download with curl..."
 	try_dl_file "$GH_URL" "gits-version.txt" || cancel_exit "$GH_URL/gits-version.txt download failed."
