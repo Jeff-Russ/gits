@@ -138,6 +138,7 @@ main () {
 					./gits-installer --update "$@"
 				else
 					echo "ERROR: could not download update"
+					exit 1
 				fi
 			else
 				echo "Already up-to-date"
