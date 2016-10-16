@@ -377,28 +377,34 @@ select_git () {
 
 check_version () {
 
+	echo "checking $SRC_DIR/gits-version.txt "
 	loc_ver=`cat "$SRC_DIR/gits-version.txt"`
-	message="$loc_ver currently installed.\n"
-
-	cd /tmp
-	# $1 is branch name which should default to "master"
-	if try_dl_file "$GH_RAW/$1" "gits-version.txt"; then
-		avail_ver=`cat ./gits-version.txt`
-		message+="$avail_ver most recent version available\n"
-		loc_num=${loc_ver%% *} # returns up to first space like: 161014.1854
-		avail_num=${avail_ver%% *}
-		# next we'll strip the decimal point:
-		if num_gt "${avail_num//./}" "${loc_num//./}"; then
-			message+="\nThere is an update available. Run:\t$ gits --update\n"
-			updatefound=0
-		else
-			message+="You are up-to-date.\n"
-			updatefound=1
-		fi
-		rm ./gits-version.txt
+	if is_z "$loc_ver"
+		echo "Error fetching update information.\n"
+		exit 1
 	else
-		message+="Error fetching update information.\n"
-		updatefound=1
+		message="$loc_ver currently installed.\n"
+
+		cd /tmp
+		# $1 is branch name which should default to "master"
+		if try_dl_file "$GH_RAW/$1" "gits-version.txt"; then
+			avail_ver=`cat ./gits-version.txt`
+			message+="$avail_ver most recent version available\n"
+			loc_num=${loc_ver%% *} # returns up to first space like: 161014.1854
+			avail_num=${avail_ver%% *}
+			# next we'll strip the decimal point:
+			if num_gt "${avail_num//./}" "${loc_num//./}"; then
+				message+="\nThere is an update available. Run:\t$ gits --update\n"
+				updatefound=0
+			else
+				message+="You are up-to-date.\n"
+				updatefound=1
+			fi
+			rm ./gits-version.txt
+		else
+			echo "Error fetching update information.\n"
+			exit 1
+		fi
 	fi
 	not_z "$2" && printf "$message"
 	return "$updatefound"
