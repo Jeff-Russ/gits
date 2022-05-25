@@ -16,7 +16,7 @@ SYNOPSIS
 `gits` [`--all` | `-a`] \[_git-commands_...]  
 `gits` [`--help` ]  
 
-TYPICAL USEAGE
+TYPICAL USAGE
 --------------
 
 FLAGLESS USEAGE: `gits` <_name_> <_git-commands_...>  
