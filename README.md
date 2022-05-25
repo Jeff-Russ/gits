@@ -1,4 +1,4 @@
-GITS 1 "OCT 2016" Linux "User Manuals"
+Gits
 =======================================
 
 NAME AND STATUS
